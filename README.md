@@ -271,4 +271,4 @@ MIT
 
 ## Autor
 
-Creado con ❤️ para estudiantes universitarios
+Creado con ❤️ para estudiantes universitarios.
