@@ -173,41 +173,53 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
 
             const data: any = await response.json();
             let content = data.choices?.[0]?.message?.content || "";
-            content = content.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+            // Limpieza básica de markdown
+            content = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
-            // Extract JSON object
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (parsed.questions && Array.isArray(parsed.questions)) {
-                // MEJORA CRÍTICA: Aleatorizar respuestas aquí mismo para evitar sesgo de posición del modelo
-                const processedQuestions = parsed.questions.map((q: any) => {
-                  const choices = [...q.choices]; // Copia del array
-                  const correctChoice = choices[q.answerIndex];
-
-                  // Shuffling choices (Fisher-Yates)
-                  for (let j = choices.length - 1; j > 0; j--) {
-                    const k = Math.floor(Math.random() * (j + 1));
-                    [choices[j], choices[k]] = [choices[k], choices[j]];
-                  }
-
-                  // Find new index
-                  const newAnswerIndex = choices.indexOf(correctChoice);
-
-                  return {
-                    ...q,
-                    choices: choices,
-                    answerIndex: newAnswerIndex
-                  };
-                });
-
-                allQuestions = [...allQuestions, ...processedQuestions];
-                success = true;
-              } else {
-                throw new Error("Invalid JSON structure");
+            // Intentar parsear el contenido directamente si es un bloque JSON limpio
+            let parsed: any;
+            try {
+              parsed = JSON.parse(content);
+            } catch (e) {
+              // Si falla, usar regex para buscar el objeto JSON
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
+                  parsed = JSON.parse(jsonMatch[0]);
+                } catch (e2) {
+                  console.error("Failed to parse regex match", e2);
+                }
               }
+            }
+
+            if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
+              // MEJORA CRÍTICA: Aleatorizar respuestas aquí mismo para evitar sesgo de posición del modelo
+              const processedQuestions = parsed.questions.map((q: any) => {
+                const choices = [...q.choices]; // Copia del array
+                const correctChoice = choices[q.answerIndex];
+
+                // Shuffling choices (Fisher-Yates)
+                for (let j = choices.length - 1; j > 0; j--) {
+                  const k = Math.floor(Math.random() * (j + 1));
+                  [choices[j], choices[k]] = [choices[k], choices[j]];
+                }
+
+                // Find new index
+                let newAnswerIndex = choices.indexOf(correctChoice);
+                if (newAnswerIndex === -1) newAnswerIndex = 0; // Fallback por seguridad
+
+                return {
+                  ...q,
+                  choices: choices,
+                  answerIndex: newAnswerIndex
+                };
+              });
+
+              allQuestions = [...allQuestions, ...processedQuestions];
+              success = true;
             } else {
-              throw new Error("No JSON found in response");
+              console.error("Invalid JSON structure received:", content.substring(0, 200));
+              throw new Error("Invalid JSON structure");
             }
 
           } catch (e) {
