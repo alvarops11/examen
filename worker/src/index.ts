@@ -112,24 +112,23 @@ export default {
         const systemPrompt = `Eres un profesor universitario experto en crear exámenes de calidad.
 Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
 
-REGLAS DE ORO DE "ANTI-PATRONES" (ESTRICTO):
-1. **LONGITUD INVERSA:** La respuesta correcta NO PUEDE ser la más larga. Debes hacer que al menos una respuesta incorrecta sea MÁS LARGA que la correcta.
-2. **CONCISIÓN:** La respuesta correcta debe ser precisa y directa.
-3. **DISTRACTORES ELABORADOS:** Los distractores deben sonar convincentes, técnicos y bien desarrollados.
-4. **MODO ALEATORIO:** Varía tu estilo. A veces la correcta es corta, a veces media, pero raramente la más larga del grupo.
+DIRECTRICES DE DISEÑO (IMPORTANTE):
+1. Intenta que todas las opciones tengan una longitud similar.
+2. Evita que la respuesta correcta sea siempre la más larga.
+3. INVENTA distractores plausibles y detallados.
+4. El objetivo es evaluar conocimiento real, no capacidad de descartar por longitud.
 
-Instrucciones de formato:
-1. Devuelve SOLO JSON válido.
-2. NO incluyas markdown.
-3. El JSON debe ser así:
+FORMATO OBLIGATORIO (JSON):
+Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escribas introducción ni conclusión.
+
 {
   "questions": [
     {
       "id": 1,
-      "question": "Pregunta...",
-      "choices": ["A", "B", "C", "D"],
+      "question": "Enunciado de la pregunta...",
+      "choices": ["Opción A", "Opción B", "Opción C", "Opción D"],
       "answerIndex": 0,
-      "explanation": "Explicación breve"
+      "explanation": "Breve justificación de la respuesta correcta"
     }
   ]
 }`;
