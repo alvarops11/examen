@@ -7,7 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
 /**
- * ExamGen - Generador de Exámenes con Gemini
+ * ExamSphere - Generador de Exámenes con IA
  * Diseño: Minimalismo Académico Moderno
  * - Tema claro (light) con azul académico como acento
  * - Tipografía: Playfair Display para títulos, Inter para cuerpo

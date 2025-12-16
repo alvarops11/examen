@@ -59,6 +59,8 @@ INSTRUCCIONES CRÍTICAS:
 TEMARIO:
 ${temario}
 
+IMPORTANTE: Si el temario contiene caracteres extraños, metadatos de PDF (como /Type /Page), números de línea sueltos o código, IGNÓRALOS COMPLETAMENTE y céntrate solo en el texto educativo y comprensible.
+
 Devuelve un JSON exactamente en este formato (sin markdown, sin explicaciones adicionales):
 {
   "title": "Examen (${curso})",

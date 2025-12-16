@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export interface ExamQuestion {
   id: number;
   question: string;
@@ -15,18 +13,44 @@ export interface ExamResponse {
 }
 
 /**
- * Genera un examen usando Google Gemini API
- * El temario se envía directamente a Gemini para que genere preguntas de calidad
+ * Genera un examen usando OpenRouter API
+ * El temario se envía directamente para que genere preguntas de calidad
  */
-export async function generateExamWithGemini(
+// Helper para dividir el texto en chunks sin cortar párrafos
+function splitText(text: string, maxChunkSize = 12000): string[] {
+  if (text.length <= maxChunkSize) return [text];
+
+  const chunks: string[] = [];
+  let currentChunk = "";
+  // Dividir por párrafos dobles o saltos de línea para conservar contexto
+  const paragraphs = text.split(/\n\n+/);
+
+  for (const p of paragraphs) {
+    if ((currentChunk + "\n\n" + p).length > maxChunkSize) {
+      if (currentChunk) chunks.push(currentChunk);
+      currentChunk = p;
+    } else {
+      currentChunk += (currentChunk ? "\n\n" : "") + p;
+    }
+  }
+
+  // Agregar el último trozo si existe
+  if (currentChunk) chunks.push(currentChunk);
+
+  // Si algo falló y no hay chunks, devolver el original
+  return chunks.length > 0 ? chunks : [text];
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function generateExamWithOpenRouter(
   apiKey: string,
   curso: string,
   dificultad: string,
   numeroPreguntas: number,
   temario: string
 ): Promise<ExamResponse> {
-  const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = "nex-agi/deepseek-v3.1-nex-n1:free";
 
   const dificultadMap = {
     facil: "básicos y conceptos fundamentales",
@@ -34,128 +58,119 @@ export async function generateExamWithGemini(
     dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
   };
 
-  const prompt = `INSTRUCCIONES CRÍTICAS PARA GENERAR EXAMEN UNIVERSITARIO:
+  // 1. Dividir el temario en chunks
+  const chunks = splitText(temario);
+  console.log(`[ExamSphere] Temario dividido en ${chunks.length} partes para optimización.`);
 
-Tu tarea ÚNICA es generar un examen tipo test basado EXCLUSIVAMENTE en el temario proporcionado.
+  let allQuestions: ExamQuestion[] = [];
 
-TEMARIO PROPORCIONADO:
-${temario}
+  // Distribución de preguntas
+  const totalChunks = chunks.length;
+  // Preguntas base por chunk
+  const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
+  // El resto se reparte entre los primeros chunks
+  const remainder = numeroPreguntas % totalChunks;
 
-=== REQUISITOS OBLIGATORIOS ===
+  for (let i = 0; i < totalChunks; i++) {
+    const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
 
-1. CONTENIDO:
-   - Usa SOLO información del temario proporcionado
-   - NO inventes datos, conceptos o información externa
-   - Si el temario es incompleto, formula preguntas más generales basadas en lo dado
-   - Evita preguntas que requieran información fuera del temario
+    // Si un chunk es muy pequeño y no le tocan preguntas, saltar (aunque el split debería balancear)
+    if (questionsForThisChunk <= 0) continue;
 
-2. CANTIDAD Y VARIEDAD:
-   - Genera EXACTAMENTE ${numeroPreguntas} preguntas
-   - Cada pregunta debe ser diferente
-   - Cubre diferentes temas/secciones del temario
-   - Evita repetir preguntas o conceptos
+    console.log(`[ExamSphere] Procesando parte ${i + 1}/${totalChunks} (${questionsForThisChunk} preguntas)...`);
 
-3. DIFICULTAD (NIVEL UNIVERSITARIO):
-   - Nivel: ${dificultadMap[dificultad as keyof typeof dificultadMap]}
-   - Adapta la complejidad del lenguaje y conceptos al nivel seleccionado
+    const chunkContent = chunks[i];
 
-4. ESTRUCTURA DE CADA PREGUNTA:
-   - 1 pregunta clara y concisa
-   - EXACTAMENTE 4 opciones de respuesta
-   - Las opciones deben ser plausibles pero claramente diferenciables
-   - La respuesta correcta debe variar de posición (no siempre la primera o última)
-   - 1 explicación breve (máximo 2 líneas) de por qué es correcta
+    const systemPrompt = `Eres un profesor universitario experto en crear exámenes de calidad.
+Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
 
-5. FORMATO DE SALIDA:
-   - Devuelve SOLO JSON válido
-   - SIN markdown, SIN bloques de código, SIN explicaciones adicionales
-   - JSON debe ser parseable directamente
-
-=== FORMATO JSON EXACTO ===
+Instrucciones de formato:
+1. Devuelve SOLO JSON válido.
+2. NO incluyas markdown.
+3. Asegúrate de que la respuesta correcta NO sea sistemáticamente la opción más larga. Varía la longitud y posición de las respuestas correctas.
+4. El JSON debe ser así:
 {
-  "title": "Examen - ${curso}",
-  "difficulty": "${dificultad}",
   "questions": [
     {
       "id": 1,
-      "question": "Pregunta clara basada en el temario",
-      "choices": ["Opción A", "Opción B", "Opción C", "Opción D"],
+      "question": "Pregunta...",
+      "choices": ["A", "B", "C", "D"],
       "answerIndex": 0,
-      "explanation": "Explicación breve basada en el temario"
+      "explanation": "Explicación breve"
     }
   ]
-}
+}`;
 
-GENERA EL EXAMEN AHORA. RESPONDE SOLO CON JSON.`;
+    const userPrompt = `Genera ${questionsForThisChunk} preguntas para el curso ${curso} nivel ${dificultadMap[dificultad as keyof typeof dificultadMap]}.
+    
+FRAGMENTO DE TEMARIO (${i + 1}/${totalChunks}):
+${chunkContent}
 
-  try {
-    let result;
-    let retries = 0;
-    const maxRetries = 3;
+RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
 
-    while (retries < maxRetries) {
-      try {
-        result = await model.generateContent(prompt);
-        break;
-      } catch (error: any) {
-        if (error?.message?.includes("429") || error?.message?.includes("quota")) {
-          retries++;
-          if (retries < maxRetries) {
-            const waitTime = Math.pow(2, retries) * 1000;
-            console.log(
-              `Cuota excedida. Reintentando en ${waitTime / 1000}s (intento ${retries}/${maxRetries})...`
-            );
-            await new Promise((resolve) => setTimeout(resolve, waitTime));
-          } else {
-            throw new Error(
-              "Se excedió el límite de cuota de Gemini. Por favor, intenta más tarde o usa otra API key."
-            );
-          }
-        } else {
-          throw error;
+    try {
+      // Pequeña pausa para no saturar 429 en modelos gratuitos si hay múltipes chunks
+      if (i > 0) await wait(2000);
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://examsphere.app",
+          "X-Title": "ExamSphere",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.7,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`Error en chunk ${i + 1}:`, errorData);
+        // Si falla un chunk, lanzamos error para que el usuario sepa que no se pudo completar
+        // Opcional: Podríamos continuar con lo que tenemos, pero mejor integridad.
+        throw new Error(`Error del proveedor en la parte ${i + 1}: ${response.status}`);
+      }
+
+      const data = await response.json();
+      let content = data.choices?.[0]?.message?.content || "";
+
+      // Limpieza
+      content = content.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          allQuestions = [...allQuestions, ...parsed.questions];
         }
       }
+
+    } catch (error) {
+      console.error(`Fallo al procesar chunk ${i + 1}`, error);
+      throw error;
     }
-
-    const responseText =
-      result?.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    if (!responseText) {
-      throw new Error("No se recibió respuesta de Gemini");
-    }
-
-    // Extraer JSON de la respuesta
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("No se encontró JSON válido en la respuesta");
-    }
-
-    const examData: ExamResponse = JSON.parse(jsonMatch[0]);
-
-    // Validar que el examen tenga el número correcto de preguntas
-    if (examData.questions.length !== numeroPreguntas) {
-      console.warn(
-        `Se esperaban ${numeroPreguntas} preguntas pero se generaron ${examData.questions.length}`
-      );
-    }
-
-    // Validar que cada pregunta tenga 4 opciones
-    examData.questions.forEach((q, index) => {
-      if (q.choices.length !== 4) {
-        throw new Error(
-          `Pregunta ${index + 1} no tiene exactamente 4 opciones`
-        );
-      }
-      if (q.answerIndex < 0 || q.answerIndex > 3) {
-        throw new Error(
-          `Pregunta ${index + 1} tiene un índice de respuesta inválido`
-        );
-      }
-    });
-
-    return examData;
-  } catch (error) {
-    console.error("Error al generar examen con Gemini:", error);
-    throw error;
   }
+
+  // Post-procesamiento: Reasignar IDs consecutivos
+  const finalQuestions = allQuestions.map((q, index) => ({
+    ...q,
+    id: index + 1
+  }));
+
+  if (finalQuestions.length === 0) {
+    throw new Error("No se pudieron generar preguntas válidas.");
+  }
+
+  return {
+    title: `Examen - ${curso}`,
+    difficulty: dificultad,
+    questions: finalQuestions
+  };
 }

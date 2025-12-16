@@ -1,5 +1,5 @@
 /**
- * Configuración de ExamGen
+ * Configuración de ExamSphere
  * Endpoint del Cloudflare Worker
  */
 

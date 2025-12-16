@@ -1,16 +1,16 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { generateExamWithGemini } from "@/lib/geminiService";
+import { generateExamWithOpenRouter } from "@/lib/geminiService";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * Diseño: Minimalismo Académico Moderno
- * - Tipografía: Playfair Display para títulos, Inter para cuerpo
- * - Paleta: Blanco/Grises + Azul académico (#1e40af)
- * - Layout: Grid asimétrico (formulario 40%, examen 60%)
- * - Interacciones: Transiciones suaves, feedback visual discreto
+ * Diseño: Neo-Academic Premium
+ * - Visual: Glassmorphism, Gradientes suaves, Sombras profundas
+ * - Interacción: Animaciones fluidas (Framer Motion)
+ * - Tipografía: Jerarquía clara y elegante
  */
 
 interface ExamQuestion {
@@ -28,7 +28,7 @@ interface ExamData {
 }
 
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
-const DEFAULT_API_KEY = "AIzaSyAXk0eTVSvZcF4L89LgbCWxuaOnu9WPlbc";
+const DEFAULT_API_KEY = "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";
 
 export default function Home() {
   // Estado del formulario
@@ -52,46 +52,34 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Extraer texto de PDF
+  // Extraer texto de PDF usando pdfjs-dist
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const text = await extractPDFText(arrayBuffer);
-      return text;
+
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        fullText += pageText + "\n\n";
+      }
+
+      const cleanedText = fullText.replace(/\s+/g, " ").trim();
+      if (!cleanedText || cleanedText.length < 10) {
+        throw new Error("No se pudo extraer texto válido del PDF");
+      }
+      return cleanedText;
     } catch (error) {
       console.error("Error extracting PDF:", error);
-      throw new Error("No se pudo extraer el texto del PDF");
+      throw new Error("No se pudo extraer el texto del PDF. Asegúrate de que no esté protegido o sea una imagen.");
     }
-  };
-
-  // Función auxiliar para extraer texto de PDF
-  const extractPDFText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
-    const view = new Uint8Array(arrayBuffer);
-    let text = "";
-
-    for (let i = 0; i < view.length - 1; i++) {
-      const byte = view[i];
-
-      if (
-        (byte >= 32 && byte <= 126) ||
-        byte === 9 ||
-        byte === 10 ||
-        byte === 13
-      ) {
-        text += String.fromCharCode(byte);
-      }
-    }
-
-    text = text
-      .replace(/\x00/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (!text || text.length < 10) {
-      throw new Error("No se pudo extraer texto válido del PDF");
-    }
-
-    return text;
   };
 
   // Manejar carga de archivo
@@ -103,83 +91,57 @@ export default function Home() {
       if (file.type === "text/plain" || file.name.endsWith(".txt")) {
         const reader = new FileReader();
         reader.onload = (event) => {
-          const text = event.target?.result as string;
-          setTemario(text);
+          setTemario(event.target?.result as string);
           toast.success("Archivo de texto cargado correctamente");
         };
-        reader.onerror = () => {
-          toast.error("Error al cargar el archivo");
-        };
         reader.readAsText(file);
-      } else if (
-        file.type === "application/pdf" ||
-        file.name.endsWith(".pdf")
-      ) {
-        const content = await extractTextFromPDF(file);
-        setTemario(content);
-        toast.success("PDF cargado correctamente");
+      } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+        const toastId = toast.loading("Procesando PDF...");
+        try {
+          const content = await extractTextFromPDF(file);
+          setTemario(content);
+          toast.dismiss(toastId);
+          toast.success("PDF cargado correctamente");
+        } catch (err) {
+          toast.dismiss(toastId);
+          throw err;
+        }
       } else {
         toast.error("Por favor, carga un archivo .txt o .pdf");
       }
     } catch (error) {
       console.error("Error:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Error al procesar el archivo"
-      );
+      toast.error(error instanceof Error ? error.message : "Error al procesar archivo");
     }
   };
 
-  // Generar examen con Gemini
+  // Generar examen
   const handleGenerarExamen = async () => {
-    if (!temario.trim()) {
-      toast.error("Por favor, ingresa el temario");
-      return;
-    }
-
+    if (!temario.trim()) return toast.error("Por favor, ingresa el temario");
     if (!apiKey.trim()) {
-      toast.error("Por favor, ingresa una API key de Gemini");
+      toast.error("Por favor, ingresa una API key");
       setShowApiKeyInput(true);
       return;
     }
 
     setLoading(true);
     try {
-      const data = await generateExamWithGemini(
-        apiKey,
-        curso,
-        dificultad,
-        numeroPreguntas,
-        temario
-      );
-
+      const data = await generateExamWithOpenRouter(apiKey, curso, dificultad, numeroPreguntas, temario);
       setExamen(data);
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);
       setCalificacion(null);
       toast.success("Examen generado correctamente");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error("Error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error al generar el examen";
-      
-      if (errorMessage.includes("cuota") || errorMessage.includes("quota")) {
-        toast.error(
-          "Límite de cuota excedido. Ingresa otra API key para continuar."
-        );
-        setShowApiKeyInput(true);
-      } else if (errorMessage.includes("API key") || errorMessage.includes("not found")) {
-        toast.error("API key inválida. Verifica que sea correcta.");
-        setShowApiKeyInput(true);
-      } else {
-        toast.error(errorMessage);
-      }
+      toast.error(error instanceof Error ? error.message : "Error al generar el examen");
     } finally {
       setLoading(false);
     }
   };
 
-  // Manejar respuesta seleccionada
+  // Manejar respuesta
   const handleRespuesta = (questionIndex: number, choiceIndex: number) => {
     if (corregido) return;
     const nuevasRespuestas = [...respuestas];
@@ -190,24 +152,17 @@ export default function Home() {
   // Corregir examen
   const handleCorregir = () => {
     if (!examen) return;
-
     let aciertos = 0;
     respuestas.forEach((respuesta, index) => {
-      if (respuesta === examen.questions[index].answerIndex) {
-        aciertos++;
-      }
+      if (respuesta === examen.questions[index].answerIndex) aciertos++;
     });
-
     const porcentaje = Math.round((aciertos / examen.questions.length) * 100);
-    setCalificacion({
-      aciertos,
-      total: examen.questions.length,
-      porcentaje,
-    });
+    setCalificacion({ aciertos, total: examen.questions.length, porcentaje });
     setCorregido(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Resetear examen
+  // Nuevo examen
   const handleNuevoExamen = () => {
     setExamen(null);
     setRespuestas([]);
@@ -216,288 +171,380 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen pb-20 overflow-x-hidden relative">
+      {/* Background Decoration */}
+      <div className="fixed inset-0 pointer-events-none z-[-1]">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 rounded-full blur-[100px]" />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-gray-200 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">ExamGen</h1>
-          <p className="text-gray-600">
-            Generador inteligente de exámenes con IA
-          </p>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        {!examen ? (
-          // Formulario
-          <Card className="p-8 shadow-sm border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">
-              Crear Nuevo Examen
-            </h2>
-
-            {/* API Key Input - Solo si se necesita cambiar */}
-            {showApiKeyInput && (
-              <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  API Key de Google Gemini
-                </label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Ingresa tu API key de Gemini..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-600 mt-2">
-                  Obtén tu API key gratis en{" "}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    Google AI Studio
-                  </a>
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowApiKeyInput(false)}
-                  className="mt-3"
-                >
-                  Continuar
-                </Button>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Curso */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Curso
-                </label>
-                <select
-                  value={curso}
-                  onChange={(e) => setCurso(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                >
-                  {CURSOS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Dificultad */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Dificultad
-                </label>
-                <select
-                  value={dificultad}
-                  onChange={(e) => setDificultad(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                >
-                  <option value="facil">Fácil</option>
-                  <option value="media">Media</option>
-                  <option value="dificil">Difícil</option>
-                </select>
-              </div>
-
-              {/* Número de Preguntas */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Número de Preguntas
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  max="50"
-                  value={numeroPreguntas}
-                  onChange={(e) => setNumeroPreguntas(parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                />
-              </div>
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="sticky top-0 z-50 glass-card border-b border-indigo-100/50"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3 overflow-hidden hover:scale-105 transition-transform duration-300">
+              <img src="/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
             </div>
-
-            {/* Temario */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Temario
-              </label>
-              <textarea
-                value={temario}
-                onChange={(e) => setTemario(e.target.value)}
-                placeholder="Pega el contenido del temario aquí..."
-                className="w-full h-40 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                O carga un archivo .txt o .pdf:
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,.pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-2"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Cargar Archivo
-              </Button>
-            </div>
-
-            {/* Botón Generar */}
-            <Button
-              onClick={handleGenerarExamen}
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generando con Gemini...
-                </>
-              ) : (
-                "Generar Examen"
-              )}
-            </Button>
-          </Card>
-        ) : (
-          // Examen
-          <div className="space-y-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Examen - {curso}
-              </h2>
-              <div className="flex items-center gap-4">
-                <span className="inline-block px-3 py-1 bg-gray-200 text-gray-700 text-sm font-semibold rounded-md">
-                  {dificultad === "facil"
-                    ? "Fácil"
-                    : dificultad === "media"
-                      ? "Media"
-                      : "Difícil"}
-                </span>
-                <span className="text-gray-600">
-                  {examen.questions.length} preguntas
-                </span>
-              </div>
-            </div>
-
-            {/* Calificación */}
-            {calificacion && (
-              <Card className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Resultados
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-gray-600 text-sm">Calificación</p>
-                    <p className="text-3xl font-bold text-blue-600">
-                      {calificacion.porcentaje}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm">Aciertos</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {calificacion.aciertos}/{calificacion.total}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm">Nota</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {(calificacion.porcentaje / 10).toFixed(1)}/10
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Preguntas */}
-            <div className="space-y-6">
-              {examen.questions.map((question, qIndex) => (
-                <Card key={question.id} className="p-6 border-gray-200">
-                  <h4 className="font-semibold text-gray-900 mb-4">
-                    {qIndex + 1}. {question.question}
-                  </h4>
-
-                  <div className="space-y-3 mb-6">
-                    {question.choices.map((choice, cIndex) => (
-                      <label
-                        key={cIndex}
-                        className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${qIndex}`}
-                          checked={respuestas[qIndex] === cIndex}
-                          onChange={() => handleRespuesta(qIndex, cIndex)}
-                          disabled={corregido}
-                          className="w-4 h-4 text-blue-600"
-                        />
-                        <span className="ml-3 text-gray-700">{choice}</span>
-                        {corregido && (
-                          <>
-                            {cIndex === question.answerIndex && (
-                              <span className="ml-auto text-green-600 font-semibold">
-                                ✓ Correcta
-                              </span>
-                            )}
-                            {respuestas[qIndex] === cIndex &&
-                              cIndex !== question.answerIndex && (
-                                <span className="ml-auto text-red-600 font-semibold">
-                                  ✗ Incorrecta
-                                </span>
-                              )}
-                          </>
-                        )}
-                      </label>
-                    ))}
-                  </div>
-
-                  {corregido && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                      <p className="text-sm font-semibold text-gray-900 mb-2">
-                        Explicación:
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        {question.explanation}
-                      </p>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-
-            {/* Botones de Acción */}
-            <div className="flex gap-4">
-              {!corregido ? (
-                <Button
-                  onClick={handleCorregir}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors"
-                >
-                  Corregir Examen
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNuevoExamen}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors"
-                >
-                  Nuevo Examen
-                </Button>
-              )}
+              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+                ExamSphere
+              </h1>
+              <p className="text-xs text-slate-500 font-medium tracking-wide">AI POWERED LEARNING</p>
             </div>
           </div>
-        )}
+          {examen && (
+            <Button variant="ghost" size="sm" onClick={handleNuevoExamen} className="text-slate-600 hover:text-indigo-600 group">
+              <ArrowRight className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform" />
+              Salir
+            </Button>
+          )}
+        </div>
+      </motion.header>
+
+      <main className="max-w-5xl mx-auto px-4 py-12">
+        <AnimatePresence mode="wait">
+          {!examen ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-center mb-12">
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium mb-6 border border-indigo-100 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Potenciado con Inteligencia Artificial</span>
+                </motion.div>
+                <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+                  Crea exámenes <span className="text-gradient">impecables</span><br />en segundos.
+                </h1>
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                  Sube tus apuntes, selecciona el nivel y deja que nuestra IA genere preguntas tipo test de calidad universitaria al instante.
+                </p>
+              </div>
+
+              <motion.div
+                className="glass-card rounded-[2rem] p-8 md:p-10 relative overflow-hidden"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                {/* Decoration */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-bl-[100%] z-0" />
+
+                <div className="relative z-10 grid gap-8">
+                  {/* Settings Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700 ml-1">Nivel Académico</label>
+                      <div className="relative">
+                        <select
+                          value={curso}
+                          onChange={(e) => setCurso(e.target.value)}
+                          className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
+                        >
+                          {CURSOS.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <GraduationCap className="absolute right-3 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700 ml-1">Dificultad</label>
+                      <div className="relative">
+                        <select
+                          value={dificultad}
+                          onChange={(e) => setDificultad(e.target.value)}
+                          className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
+                        >
+                          <option value="facil">Básica</option>
+                          <option value="media">Intermedia</option>
+                          <option value="dificil">Avanzada</option>
+                        </select>
+                        <BrainCircuit className="absolute right-3 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700 ml-1">Preguntas</label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="50"
+                        value={numeroPreguntas}
+                        onChange={(e) => setNumeroPreguntas(parseInt(e.target.value))}
+                        className="w-full px-4 py-3 glass-input rounded-xl text-slate-700 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* API Key Toggle Section */}
+                  <AnimatePresence>
+                    {showApiKeyInput && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 bg-orange-50/50 border border-orange-100 rounded-xl">
+                          <label className="block text-sm font-semibold text-orange-800 mb-2">
+                            OpenRouter API Key
+                          </label>
+                          <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="sk-or-..."
+                            className="w-full px-4 py-2 bg-white border-orange-200 rounded-lg text-sm focus:ring-orange-500"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Upload Area */}
+                  <div className="space-y-4">
+                    <label className="text-sm font-semibold text-slate-700 ml-1 flex items-center justify-between">
+                      <span>Material de Estudio</span>
+                      <span className="text-xs text-slate-400 font-normal">Soporta texto y PDF</span>
+                    </label>
+                    <div className="relative group">
+                      <textarea
+                        value={temario}
+                        onChange={(e) => setTemario(e.target.value)}
+                        placeholder="Pega aquí tus apuntes o usa el botón para subir un archivo..."
+                        className="w-full h-48 px-6 py-5 glass-input rounded-2xl resize-none text-slate-600 placeholder:text-slate-400 leading-relaxed"
+                      />
+                      <div className="absolute bottom-4 right-4">
+                        <input ref={fileInputRef} type="file" accept=".txt,.pdf" onChange={handleFileUpload} className="hidden" />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-white shadow-sm hover:shadow-md border border-slate-100 text-indigo-600 transition-all rounded-xl"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Subir Archivo
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Generate Button */}
+                  <Button
+                    onClick={handleGenerarExamen}
+                    disabled={loading}
+                    className="w-full btn-gradient py-6 text-lg tracking-wide rounded-2xl relative overflow-hidden group"
+                  >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Analizando contenido...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <BookOpen className="w-5 h-5" />
+                        Generar Examen
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="exam"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="space-y-8"
+            >
+              {/* Exam Header */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold text-slate-900 mb-1">
+                    Examen {curso}
+                  </h2>
+                  <div className="flex items-center gap-2 text-slate-500 text-sm">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-medium capitalize text-slate-700">
+                      {dificultad}
+                    </span>
+                    <span>•</span>
+                    <span>{examen.questions.length} preguntas</span>
+                  </div>
+                </div>
+
+                {/* Score Card - Animated */}
+                <AnimatePresence>
+                  {calificacion && (
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="bg-white rounded-2xl p-4 shadow-lg border border-indigo-100 flex items-center gap-6"
+                    >
+                      <div className="text-center">
+                        <div className="text-sm text-slate-500 font-medium">Nota Final</div>
+                        <div className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
+                          {(calificacion.porcentaje / 10).toFixed(1)}
+                        </div>
+                      </div>
+                      <div className="h-10 w-px bg-slate-100" />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-green-600 font-semibold">
+                          <CheckCircle2 className="w-4 h-4" />
+                          {calificacion.aciertos} Aciertos
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-red-500 font-semibold">
+                          <XCircle className="w-4 h-4" />
+                          {calificacion.total - calificacion.aciertos} Fallos
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Questions List */}
+              <div className="space-y-6">
+                {examen.questions.map((question, qIndex) => (
+                  <motion.div
+                    key={question.id}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: qIndex * 0.05 }}
+                    className={`glass-card rounded-2xl p-6 md:p-8 transition-colors duration-300 ${corregido
+                      ? respuestas[qIndex] === question.answerIndex
+                        ? "border-green-200 bg-green-50/30"
+                        : respuestas[qIndex] !== null
+                          ? "border-red-200 bg-red-50/30"
+                          : ""
+                      : ""
+                      }`}
+                  >
+                    <div className="flex gap-4">
+                      <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm">
+                        {qIndex + 1}
+                      </span>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-slate-800 mb-6 leading-relaxed">
+                          {question.question}
+                        </h4>
+
+                        <div className="grid gap-3">
+                          {question.choices.map((choice, cIndex) => {
+                            const isSelected = respuestas[qIndex] === cIndex;
+                            const isCorrect = corregido && cIndex === question.answerIndex;
+                            const isWrongAttempt = corregido && isSelected && !isCorrect;
+
+                            return (
+                              <label
+                                key={cIndex}
+                                className={`relative flex items-center p-4 rounded-xl cursor-pointer border-2 transition-all duration-200 group
+                                    ${isSelected
+                                    ? "border-indigo-500 bg-indigo-50/50"
+                                    : "border-transparent bg-slate-50 hover:bg-slate-100"}
+                                    ${isCorrect ? "!border-green-500 !bg-green-50" : ""}
+                                    ${isWrongAttempt ? "!border-red-500 !bg-red-50" : ""}
+                                  `}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${qIndex}`}
+                                  checked={isSelected}
+                                  onChange={() => handleRespuesta(qIndex, cIndex)}
+                                  disabled={corregido}
+                                  className="hidden"
+                                />
+                                {/* Custom Checkbox UI */}
+                                <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center transition-colors
+                                    ${isSelected ? "border-indigo-500" : "border-slate-300 group-hover:border-indigo-300"}
+                                    ${isCorrect ? "!border-green-500" : ""}
+                                    ${isWrongAttempt ? "!border-red-500" : ""}
+                                  `}>
+                                  {isSelected && <div className={`w-2.5 h-2.5 rounded-full ${isCorrect ? "bg-green-500" : isWrongAttempt ? "bg-red-500" : "bg-indigo-500"}`} />}
+                                </div>
+
+                                <span className={`text-sm font-medium ${isSelected ? "text-indigo-900" : "text-slate-600"}`}>
+                                  {choice}
+                                </span>
+
+                                {corregido && (isCorrect || isWrongAttempt) && (
+                                  <div className="ml-auto">
+                                    {isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                                  </div>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+
+                        {/* Explanation Box */}
+                        <AnimatePresence>
+                          {corregido && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              className="mt-6 overflow-hidden"
+                            >
+                              <div className="bg-white/50 rounded-xl p-5 border border-indigo-100 flex gap-3">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg h-fit">
+                                  <BrainCircuit className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1">Explicación</p>
+                                  <p className="text-sm text-slate-700 leading-relaxed">
+                                    {question.explanation}
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="sticky bottom-8 z-40 bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-indigo-100 flex gap-4 max-w-xl mx-auto"
+              >
+                {!corregido ? (
+                  <Button
+                    onClick={handleCorregir}
+                    className="flex-1 btn-gradient py-6 text-lg rounded-xl"
+                  >
+                    Corregir Examen
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleNuevoExamen}
+                    className="flex-1 btn-gradient py-6 text-lg rounded-xl shadow-none hover:shadow-lg"
+                  >
+                    Crear Nuevo Examen
+                  </Button>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
