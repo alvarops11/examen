@@ -5,6 +5,9 @@ import { Route, Switch, Router as WouterRouter } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import AvisoLegal from "./pages/AvisoLegal";
+import Privacidad from "./pages/Privacidad";
+import Cookies from "./pages/Cookies";
 
 /**
  * ExamSphere - Generador de Exámenes con IA
@@ -19,6 +22,9 @@ function Router() {
     <WouterRouter base={import.meta.env.BASE_URL}>
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/aviso-legal"} component={AvisoLegal} />
+        <Route path={"/privacidad"} component={Privacidad} />
+        <Route path={"/cookies"} component={Cookies} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

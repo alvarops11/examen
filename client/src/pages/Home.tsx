@@ -5,6 +5,8 @@ import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, Check
 import { toast } from "sonner";
 import { generateExamWithOpenRouter } from "@/lib/geminiService";
 import { motion, AnimatePresence } from "framer-motion";
+import CookieBanner from "@/components/CookieBanner";
+import { Link } from "wouter";
 
 /**
  * Diseño: Neo-Academic Premium
@@ -28,7 +30,6 @@ interface ExamData {
 }
 
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
-const DEFAULT_API_KEY = "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";
 
 export default function Home() {
   // Estado del formulario
@@ -36,9 +37,7 @@ export default function Home() {
   const [dificultad, setDificultad] = useState("media");
   const [numeroPreguntas, setNumeroPreguntas] = useState(20);
   const [temario, setTemario] = useState("");
-  const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
   const [loading, setLoading] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   // Estado del examen
   const [examen, setExamen] = useState<ExamData | null>(null);
@@ -118,15 +117,10 @@ export default function Home() {
   // Generar examen
   const handleGenerarExamen = async () => {
     if (!temario.trim()) return toast.error("Por favor, ingresa el temario");
-    if (!apiKey.trim()) {
-      toast.error("Por favor, ingresa una API key");
-      setShowApiKeyInput(true);
-      return;
-    }
 
     setLoading(true);
     try {
-      const data = await generateExamWithOpenRouter(apiKey, curso, dificultad, numeroPreguntas, temario);
+      const data = await generateExamWithOpenRouter("", curso, dificultad, numeroPreguntas, temario);
       setExamen(data);
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);
@@ -171,7 +165,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen pb-20 overflow-x-hidden relative">
+    <div className="min-h-screen overflow-x-hidden relative flex flex-col">
       {/* Background Decoration */}
       <div className="fixed inset-0 pointer-events-none z-[-1]">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px]" />
@@ -206,7 +200,7 @@ export default function Home() {
         </div>
       </motion.header>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
+      <main className="max-w-5xl mx-auto px-4 py-12 flex-grow">
         <AnimatePresence mode="wait">
           {!examen ? (
             <motion.div
@@ -243,6 +237,7 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-bl-[100%] z-0" />
 
                 <div className="relative z-10 grid gap-8">
+                  {/* Settings Grid */}
                   {/* Settings Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
@@ -287,31 +282,6 @@ export default function Home() {
                       />
                     </div>
                   </div>
-
-                  {/* API Key Toggle Section */}
-                  <AnimatePresence>
-                    {showApiKeyInput && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4 bg-orange-50/50 border border-orange-100 rounded-xl">
-                          <label className="block text-sm font-semibold text-orange-800 mb-2">
-                            OpenRouter API Key
-                          </label>
-                          <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="sk-or-..."
-                            className="w-full px-4 py-2 bg-white border-orange-200 rounded-lg text-sm focus:ring-orange-500"
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   {/* Upload Area */}
                   <div className="space-y-4">
@@ -546,6 +516,34 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Footer con enlaces legales */}
+      <footer className="bg-slate-50 py-6">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-slate-500">
+              © 2024 ExamSphere. Herramienta educativa sin ánimo de lucro.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+              <Link href="/aviso-legal" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                Aviso Legal
+              </Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/privacidad" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                Privacidad
+              </Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/cookies" className="text-slate-600 hover:text-indigo-600 transition-colors">
+                Cookies
+              </Link>
+
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Cookie Banner */}
+      <CookieBanner />
     </div>
   );
 }

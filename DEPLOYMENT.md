@@ -4,149 +4,77 @@ Esta guía te ayudará a desplegar ExamGen en GitHub Pages (frontend) y Cloudfla
 
 ## Requisitos Previos
 
-- **Node.js 18+** - Descarga desde [nodejs.org](https://nodejs.org/)
-- **Git** - Descarga desde [git-scm.com](https://git-scm.com/)
-- **Cuenta de GitHub** - Crea una en [github.com](https://github.com/)
-- **Cuenta de Cloudflare** - Crea una en [cloudflare.com](https://www.cloudflare.com/)
-- **API Key de Gemini** - Obtén una en [Google AI Studio](https://aistudio.google.com/app/apikeys)
+- **Node.js 18+**
+- **Git**
+- **Cuenta de GitHub**
+- **Cuenta de Cloudflare**
+- **API Key de OpenRouter** (Obtén una en [openrouter.ai](https://openrouter.ai/))
 
-## Paso 1: Obtener la API Key de Gemini
+## Paso 1: Obtener la API Key de OpenRouter
 
-1. Ve a [Google AI Studio](https://aistudio.google.com/app/apikeys)
-2. Haz clic en "Create API key"
-3. Selecciona "Create API key in new project"
-4. Copia la clave generada (la necesitarás después)
-5. **Guarda esta clave en un lugar seguro**
+1. Ve a [OpenRouter](https://openrouter.ai/)
+2. Crea una cuenta y genera una API Key.
+3. **Guarda esta clave en un lugar seguro.**
 
-## Paso 2: Preparar el Repositorio en GitHub
+## Paso 2: Desplegar el Cloudflare Worker (Backend)
 
-### 2.1 Crear un nuevo repositorio
+El backend es necesario para ocultar tu API Key y procesar las peticiones de IA.
 
-1. Ve a [GitHub](https://github.com/new)
-2. Nombre del repositorio: `examgen`
-3. Descripción: "Generador de exámenes con Gemini"
-4. Selecciona "Public"
-5. Haz clic en "Create repository"
-
-### 2.2 Clonar el repositorio localmente
-
-```bash
-git clone https://github.com/TU_USUARIO/examgen.git
-cd examgen
-```
-
-Reemplaza `TU_USUARIO` con tu nombre de usuario de GitHub.
-
-### 2.3 Copiar los archivos del proyecto
-
-Copia todos los archivos del proyecto ExamGen al repositorio clonado:
-
-```bash
-# Desde la carpeta del proyecto original
-cp -r client/* /ruta/a/tu/repositorio/
-cp -r worker /ruta/a/tu/repositorio/
-cp README.md /ruta/a/tu/repositorio/
-cp DEPLOYMENT.md /ruta/a/tu/repositorio/
-```
-
-## Paso 3: Desplegar el Frontend en GitHub Pages
-
-### 3.1 Instalar dependencias
-
-```bash
-cd examgen
-npm install
-# o si usas pnpm
-pnpm install
-```
-
-### 3.2 Construir el proyecto
-
-```bash
-npm run build
-```
-
-Esto creará una carpeta `dist/` con los archivos estáticos.
-
-### 3.3 Configurar GitHub Pages
-
-1. Ve a tu repositorio en GitHub
-2. Haz clic en "Settings"
-3. En el menú izquierdo, selecciona "Pages"
-4. En "Source", selecciona "Deploy from a branch"
-5. Selecciona rama `main` y carpeta `/dist`
-6. Haz clic en "Save"
-
-### 3.4 Hacer push del código
-
-```bash
-git add .
-git commit -m "Initial commit: ExamGen frontend"
-git push origin main
-```
-
-**Tu frontend estará disponible en:** `https://TU_USUARIO.github.io/examgen`
-
-Espera 2-3 minutos para que GitHub Pages construya el sitio.
-
-## Paso 4: Desplegar el Cloudflare Worker
-
-### 4.1 Instalar Wrangler
-
+### 2.1 Instalar Wrangler y Autenticar
 ```bash
 npm install -g wrangler
-```
-
-### 4.2 Autenticarse con Cloudflare
-
-```bash
 wrangler login
 ```
 
-Esto abrirá tu navegador para que inicies sesión en Cloudflare.
-
-### 4.3 Configurar la API Key
-
+### 2.2 Configurar la API Key Segura
 ```bash
 cd worker
-wrangler secret put GEMINI_API_KEY
+wrangler secret put OPENROUTER_API_KEY
 ```
+*Pega tu API Key de OpenRouter cuando te lo pida.*
 
-Cuando se pida, pega tu API key de Gemini (obtenida en el Paso 1).
-
-### 4.4 Instalar dependencias del Worker
-
-```bash
-npm install
-```
-
-### 4.5 Desplegar el Worker
-
+### 2.3 Desplegar
 ```bash
 npm run deploy
 ```
 
-Cloudflare te mostrará una URL como:
-```
-https://examgen-worker.TU_USUARIO.workers.dev
-```
+Cloudflare te dará una URL (ej: `https://examgen-worker.TU_USUARIO.workers.dev`). **CÓPIALA.**
 
-**Guarda esta URL**, la necesitarás en el siguiente paso.
+## Paso 3: Configurar el Frontend
 
-## Paso 5: Conectar Frontend y Backend
+El frontend necesita saber dónde está tu backend.
 
-### 5.1 Actualizar la URL del Worker
-
-1. Abre el archivo `client/src/pages/Home.tsx`
-2. Busca la línea:
-   ```typescript
-   const workerUrl = import.meta.env.VITE_WORKER_URL || "http://localhost:8787";
+1. Crea un archivo `.env.production` en la carpeta raíz del proyecto (junto a `.env.example`).
+2. Añade esta línea con tu URL del paso anterior:
    ```
-3. Reemplázala con:
-   ```typescript
-   const workerUrl = "https://examgen-worker.TU_USUARIO.workers.dev";
+   VITE_WORKER_URL=https://examgen-worker.TU_USUARIO.workers.dev
    ```
-   (Usa la URL que Cloudflare te dio en el Paso 4.5)
+
+## Paso 4: Desplegar en GitHub Pages (Frontend)
+
+### 4.1 Construir el proyecto
+```bash
+# Vuelve a la raíz
+cd .. 
+npm run build
+```
+Esto creará una carpeta `dist/` optimizada para producción.
+
+### 4.2 Subir a GitHub
+1. Crea un repo en GitHub.
+2. Sube tus archivos (asegúrate de que la carpeta `dist` esté incluida o configurada en tu .gitignore dependiendo de tu estrategia, para principiantes sugerimos subir el código fuente y usar GitHub Actions, pero si sigues el método manual asegúrate de subir el contenido de dist a una rama `gh-pages`).
+
+**Método Recomendado (GitHub Actions):**
+El proyecto ya está configurado para usarse con Vite. Solo necesitas hacer push de tu código fuente (`src`, `package.json`, etc) a GitHub.
+Luego en GitHub: Settings > Pages > Source: GitHub Actions.
+
+Si prefieres el método manual de subir la carpeta `dist`:
+```bash
+git add dist -f
+git commit -m "Deploy"
+git subtree push --prefix dist origin gh-pages
+```
+
 
 ### 5.2 Reconstruir y desplegar
 
