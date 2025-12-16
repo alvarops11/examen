@@ -188,7 +188,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3 overflow-hidden hover:scale-105 transition-transform duration-300">
-              <img src="/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
+              <img src="/examen/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">

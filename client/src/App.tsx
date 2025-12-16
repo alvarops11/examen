@@ -14,8 +14,9 @@ import Home from "./pages/Home";
  */
 
 function Router() {
+  // Use BASE_URL from vite config for consistent routing
   return (
-    <WouterRouter base="/examen">
+    <WouterRouter base={import.meta.env.BASE_URL}>
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/404"} component={NotFound} />
