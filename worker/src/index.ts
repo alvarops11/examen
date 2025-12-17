@@ -1,6 +1,7 @@
 
 export interface Env {
   OPENROUTER_API_KEY: string;
+  OPENROUTER_API_KEY_BACKUP?: string;
 }
 
 interface ExamQuestion {
@@ -56,6 +57,42 @@ function corsHeaders() {
   };
 }
 
+// Helper para hacer fetch con retry y failover
+async function fetchWithFailover(
+  url: string,
+  options: RequestInit,
+  env: Env
+): Promise<Response> {
+  const keys = [env.OPENROUTER_API_KEY];
+  if (env.OPENROUTER_API_KEY_BACKUP) {
+    keys.push(env.OPENROUTER_API_KEY_BACKUP);
+  }
+
+  for (const apiKey of keys) {
+    const headers = new Headers(options.headers);
+    headers.set("Authorization", `Bearer ${apiKey}`);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      // Si es exitoso o es un error de cliente (400) que no sea auth/rate limit, retornamos
+      if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
+        return response;
+      }
+
+      console.warn(`API Key falló con status ${response.status}. Intentando siguiente key si existe...`);
+    } catch (error) {
+      console.warn(`Error de red con API Key. Intentando siguiente key...`, error);
+    }
+  }
+
+  // Si todas fallan, lanzar error
+  throw new Error("Todas las API keys fallaron. Servicio no disponible temporalmente.");
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // Handle CORS preflight
@@ -71,8 +108,7 @@ export default {
     }
 
     try {
-      const apiKey = env.OPENROUTER_API_KEY;
-      if (!apiKey) {
+      if (!env.OPENROUTER_API_KEY) {
         return new Response(JSON.stringify({ error: "Server misconfiguration: Missing API Key" }), {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders() },
@@ -148,10 +184,9 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
           try {
             if (i > 0 && attempts === 0) await wait(1000); // Rate limit spacing
 
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "https://examsphere.app", // Optional
                 "X-Title": "ExamSphere", // Optional
@@ -164,7 +199,7 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
                 ],
                 temperature: 0.7,
               })
-            });
+            }, env);
 
             if (!response.ok) {
               const errText = await response.text();
