@@ -71,16 +71,6 @@ export default function Cookies() {
                                 </div>
 
                                 <div className="border border-slate-200 rounded-xl p-4">
-                                    <h3 className="font-bold text-slate-900 mb-2">VITE_OPENROUTER_API_KEY (opcional)</h3>
-                                    <ul className="text-sm space-y-1">
-                                        <li><strong>Propósito:</strong> Guardar tu API key para no tener que introducirla cada vez</li>
-                                        <li><strong>Tipo:</strong> Funcional</li>
-                                        <li><strong>Duración:</strong> Permanente (hasta que borres datos del navegador)</li>
-                                        <li><strong>Datos:</strong> Tu API key de OpenRouter (solo visible para ti)</li>
-                                    </ul>
-                                </div>
-
-                                <div className="border border-slate-200 rounded-xl p-4">
                                     <h3 className="font-bold text-slate-900 mb-2">Preferencias de Usuario</h3>
                                     <ul className="text-sm space-y-1">
                                         <li><strong>Propósito:</strong> Recordar configuraciones (tema, idioma, etc.)</li>
@@ -118,7 +108,7 @@ export default function Cookies() {
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li><strong>Funcionamiento técnico:</strong> Mantener la funcionalidad básica de la aplicación</li>
-                                <li><strong>Comodidad del usuario:</strong> Evitar que tengas que reintroducir tu API key en cada sesión</li>
+                                <li><strong>Comodidad del usuario:</strong> Recordar tus preferencias y configuraciones</li>
                                 <li><strong>Cumplimiento legal:</strong> Recordar tu consentimiento sobre cookies</li>
                             </ul>
                         </section>
@@ -184,7 +174,6 @@ export default function Cookies() {
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li>Los datos de localStorage se eliminarán automáticamente al cerrar la ventana</li>
-                                <li>Tendrás que introducir tu API key en cada sesión</li>
                                 <li>No se guardará tu consentimiento de cookies</li>
                             </ul>
                         </section>

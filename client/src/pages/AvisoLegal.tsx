@@ -60,8 +60,7 @@ export default function AvisoLegal() {
                                 3. Condiciones de Uso
                             </h2>
                             <ul className="list-disc pl-6 space-y-2">
-                                <li>El usuario debe proporcionar su propia API key de OpenRouter para utilizar el servicio</li>
-                                <li>El usuario es responsable del uso que haga de su API key y de los costes asociados</li>
+                                <li>El servicio utiliza inteligencia artificial para generar contenido educativo</li>
                                 <li>No se garantiza la disponibilidad continua del servicio</li>
                                 <li>El contenido generado se proporciona "tal cual", sin garantías de exactitud o precisión</li>
                                 <li>ExamSphere no almacena ni procesa datos personales del usuario en servidores externos</li>
@@ -90,7 +89,6 @@ export default function AvisoLegal() {
                             <ul className="list-disc pl-6 space-y-2">
                                 <li>La exactitud, veracidad o actualización del contenido generado por la IA</li>
                                 <li>Los resultados académicos derivados del uso de exámenes generados</li>
-                                <li>El uso indebido de API keys por parte de terceros</li>
                                 <li>Interrupciones del servicio por causas técnicas o de terceros</li>
                                 <li>Daños derivados del uso inadecuado de la plataforma</li>
                             </ul>

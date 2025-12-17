@@ -120,7 +120,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const data = await generateExamWithOpenRouter("", curso, dificultad, numeroPreguntas, temario);
+      const data = await generateExamWithOpenRouter(curso, dificultad, numeroPreguntas, temario);
       setExamen(data);
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);

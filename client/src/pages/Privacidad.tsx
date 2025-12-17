@@ -72,7 +72,6 @@ export default function Privacidad() {
                                 ExamSphere utiliza <strong>localStorage</strong> del navegador para guardar información <strong>únicamente en tu dispositivo</strong>:
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
-                                <li><strong>API Key de OpenRouter:</strong> Se almacena localmente en tu navegador para tu comodidad. Nunca se envía a nuestros servidores (no tenemos servidores de backend)</li>
                                 <li><strong>Preferencias de usuario:</strong> Configuraciones de la aplicación (tema, idioma, etc.)</li>
                                 <li><strong>Aceptación de cookies:</strong> Estado de tu consentimiento de cookies</li>
                             </ul>
@@ -90,7 +89,10 @@ export default function Privacidad() {
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li>
-                                    <strong>OpenRouter API:</strong> Servicio que proporciona acceso a modelos de IA. Cuando generas un examen, tu temario y API key se envían directamente desde tu navegador a OpenRouter. Consulta la{" "}
+                                    <strong>Cloudflare Workers:</strong> Servicio de edge computing que ejecuta nuestro backend de forma segura. La API key de OpenRouter se almacena de forma segura en el worker, nunca en tu navegador.
+                                </li>
+                                <li>
+                                    <strong>OpenRouter API:</strong> Servicio que proporciona acceso a modelos de IA. Cuando generas un examen, tu temario se envía a nuestro Cloudflare Worker, que luego lo procesa con OpenRouter. Consulta la{" "}
                                     <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                                         política de privacidad de OpenRouter
                                     </a>
@@ -123,7 +125,7 @@ export default function Privacidad() {
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li>La seguridad de tu dispositivo y navegador</li>
-                                <li>Tu API key de OpenRouter (guárdala de forma segura)</li>
+                                <li>La seguridad de Cloudflare Workers, donde se almacena la API key de forma segura</li>
                                 <li>El uso de HTTPS para todas las comunicaciones</li>
                             </ul>
                         </section>

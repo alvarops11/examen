@@ -17,10 +17,6 @@ export interface ExamResponse {
  * La lógica de IA y protección de API Key está en el servidor.
  */
 export async function generateExamWithOpenRouter(
-  apiKey: string, // Kept for interface compatibility but might be unused if we fully rely on backend env. 
-  // HOWEVER, the current plan says backend has key. 
-  // If I change the signature I might break the calling component.
-  // For now, I will keep the signature but ignore the apiKey arg or pass it if the backend relied on it (it doesn't, it uses env).
   curso: string,
   dificultad: string,
   numeroPreguntas: number,
