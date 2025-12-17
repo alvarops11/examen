@@ -112,11 +112,12 @@ export default {
         const systemPrompt = `Eres un profesor universitario experto en crear exámenes de calidad.
 Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
 
-DIRECTRICES DE DISEÑO (IMPORTANTE):
-1. Intenta que todas las opciones tengan una longitud similar.
-2. Evita que la respuesta correcta sea siempre la más larga.
-3. INVENTA distractores plausibles y detallados.
-4. El objetivo es evaluar conocimiento real, no capacidad de descartar por longitud.
+DIRECTRICES DE DISEÑO CRÍTICAS (ANTI-SESGOS):
+1. LONGITUD UNIFORME: Todas las opciones de respuesta DEBEN tener aproximadamente la misma longitud (número de palabras).
+2. EVITAR PATRONES OBVIOS: La respuesta correcta NO debe ser ni la más larga ni la más corta de forma sistemática.
+3. DISTRACTORES DE CALIDAD: Genera distractores detallados y plausibles. Si la respuesta correcta es larga, los distractores deben ser igual de largos.
+4. EQUILIBRIO: Asegúrate de que las respuestas correctas varíen en posición y longitud relativa y no sean predecibles por su redacción.
+5. PENALIZACIÓN: Si la respuesta correcta es visiblemente más larga que el resto, el examen se considerará inválido. Ajusta la redacción para igualarlas.
 
 FORMATO OBLIGATORIO (JSON):
 Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escribas introducción ni conclusión.
