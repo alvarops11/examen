@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { getMailLink } from "@/lib/utils";
 
 export default function AvisoLegal() {
     return (
@@ -26,7 +27,7 @@ export default function AvisoLegal() {
                                 <li><strong>Dominio:</strong> https://alvarops11.github.io/examen/</li>
                                 <li><strong>Actividad:</strong> Plataforma educativa de generación de exámenes mediante inteligencia artificial</li>
                                 <li><strong>Finalidad:</strong> Herramienta académica sin ánimo de lucro para estudiantes</li>
-                                <li><strong>Contacto:</strong> soporteexamsphere@gmail.com</li>
+                                <li><strong>Contacto:</strong> <a href={getMailLink("soporteexamsphere@gmail.com")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">soporteexamsphere@gmail.com</a></li>
                             </ul>
                         </section>
 

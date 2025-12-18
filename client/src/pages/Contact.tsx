@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Mail, MessageSquare, Bug, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getMailLink } from "@/lib/utils";
 
 export default function Contact() {
     const [loading, setLoading] = useState(false);
@@ -68,7 +69,12 @@ export default function Contact() {
                             <div>
                                 <h4 className="font-bold text-slate-800 text-lg">Email Directo</h4>
                                 <p className="text-slate-500 text-sm mb-2">Escríbenos en cualquier momento</p>
-                                <a href="mailto:soporteexamsphere@gmail.com" className="text-indigo-600 font-semibold hover:underline break-all block text-sm sm:text-base">
+                                <a
+                                    href={getMailLink("soporteexamsphere@gmail.com")}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-600 font-semibold hover:underline break-all block text-sm sm:text-base"
+                                >
                                     soporteexamsphere@gmail.com
                                 </a>
                             </div>

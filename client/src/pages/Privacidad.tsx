@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { getMailLink } from "@/lib/utils";
 
 export default function Privacidad() {
     return (
@@ -139,7 +140,7 @@ export default function Privacidad() {
                                 10. Contacto
                             </h2>
                             <p>
-                                Para cualquier duda sobre privacidad, puedes contactar con nosotros a través de nuestro correo electrónico oficial: <strong>soporteexamsphere@gmail.com</strong>
+                                Para cualquier duda sobre privacidad, puedes contactar con nosotros a través de nuestro correo electrónico oficial: <a href={getMailLink("soporteexamsphere@gmail.com")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">soporteexamsphere@gmail.com</a>
                             </p>
                         </section>
 
