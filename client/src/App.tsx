@@ -22,9 +22,9 @@ import Estadisticas from "./pages/Estadisticas";
  */
 
 function Router() {
-  // Use BASE_URL from vite config for consistent routing
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   return (
-    <WouterRouter base={import.meta.env.BASE_URL}>
+    <WouterRouter base={base}>
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/como-usar"} component={HowToUse} />
