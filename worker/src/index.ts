@@ -22,6 +22,7 @@ interface GenerateRequest {
   curso: string;
   dificultad: string;
   numeroPreguntas: number;
+  numeroRespuestas: number;
   temario: string;
 }
 
@@ -116,7 +117,7 @@ export default {
       }
 
       const body = await request.json() as GenerateRequest;
-      const { curso, dificultad, numeroPreguntas, temario } = body;
+      const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario } = body;
 
       if (!temario || !temario.trim()) {
         return new Response(JSON.stringify({ error: "Temario requerido" }), {
@@ -147,13 +148,14 @@ export default {
 
         const systemPrompt = `Eres un profesor universitario experto en crear exámenes de calidad.
 Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
+Cada pregunta DEBE tener exactamente ${numeroRespuestas || 4} opciones de respuesta.
 
-DIRECTRICES DE DISEÑO CRÍTICAS (ANTI-SESGOS):
-1. LONGITUD UNIFORME: Todas las opciones de respuesta DEBEN tener aproximadamente la misma longitud (número de palabras).
-2. EVITAR PATRONES OBVIOS: La respuesta correcta NO debe ser ni la más larga ni la más corta de forma sistemática.
-3. DISTRACTORES DE CALIDAD: Genera distractores detallados y plausibles. Si la respuesta correcta es larga, los distractores deben ser igual de largos.
-4. EQUILIBRIO: Asegúrate de que las respuestas correctas varíen en posición y longitud relativa y no sean predecibles por su redacción.
-5. PENALIZACIÓN: Si la respuesta correcta es visiblemente más larga que el resto, el examen se considerará inválido. Ajusta la redacción para igualarlas.
+DIRECTRICES DE DISEÑO CRÍTICAS (SIMETRÍA ABSOLUTA):
+1. SIMETRÍA VISUAL OBLIGATORIA: Todas las opciones deben ocupar un espacio visual similar. Si la respuesta correcta tiene 15 palabras, los distractores deben tener entre 14 y 16 palabras.
+2. ROMPER EL PATRÓN DE LONGITUD: En un 30% de las preguntas, haz que uno de los distractores sea LIGERAMENTE MÁS LARGO o más detallado que la respuesta correcta.
+3. NO AÑADIR EXPLICACIONES EN LA OPCIÓN: La respuesta correcta debe ser directa. Si necesitas explicar algo, hazlo en el campo "explanation", NO en el campo "choices".
+4. ESTRUCTURA PARALELA: Si la respuesta correcta es una frase compleja con subordinadas, los distractores DEBEN ser frases complejas con la misma estructura.
+5. DISTRACTORES DE ALTO NIVEL: No uses distractores cortos o simplistas. Deben ser tan técnicos y específicos como la respuesta correcta.
 
 FORMATO OBLIGATORIO (JSON):
 Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escribas introducción ni conclusión.
@@ -163,7 +165,7 @@ Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escri
     {
       "id": 1,
       "question": "Enunciado de la pregunta...",
-      "choices": ["Opción A", "Opción B", "Opción C", "Opción D"],
+      "choices": ["Opción 1", "Opción 2", "..."],
       "answerIndex": 0,
       "explanation": "Breve justificación de la respuesta correcta"
     }

@@ -20,6 +20,7 @@ export async function generateExamWithOpenRouter(
   curso: string,
   dificultad: string,
   numeroPreguntas: number,
+  numeroRespuestas: number,
   temario: string
 ): Promise<ExamResponse> {
 
@@ -38,6 +39,7 @@ export async function generateExamWithOpenRouter(
         curso,
         dificultad,
         numeroPreguntas,
+        numeroRespuestas,
         temario
       })
     });

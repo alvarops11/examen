@@ -38,6 +38,7 @@ export default function Home() {
   const [curso, setCurso] = useState("1º");
   const [dificultad, setDificultad] = useState("media");
   const [numeroPreguntas, setNumeroPreguntas] = useState(20);
+  const [numeroRespuestas, setNumeroRespuestas] = useState(4);
   const [temario, setTemario] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -122,7 +123,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const data = await generateExamWithOpenRouter(curso, dificultad, numeroPreguntas, temario);
+      const data = await generateExamWithOpenRouter(curso, dificultad, numeroPreguntas, numeroRespuestas, temario);
       setExamen(data);
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);
@@ -218,7 +219,7 @@ export default function Home() {
                 <div className="relative z-10 grid gap-8">
                   {/* Settings Grid */}
                   {/* Settings Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700 ml-1">Nivel Académico</label>
                       <div className="relative">
@@ -259,6 +260,24 @@ export default function Home() {
                         onChange={(e) => setNumeroPreguntas(parseInt(e.target.value))}
                         className="w-full px-4 py-3 glass-input rounded-xl text-slate-700 font-medium"
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700 ml-1">Respuestas</label>
+                      <div className="relative">
+                        <select
+                          value={numeroRespuestas}
+                          onChange={(e) => setNumeroRespuestas(parseInt(e.target.value))}
+                          className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
+                        >
+                          <option value="2">2 opciones</option>
+                          <option value="3">3 opciones</option>
+                          <option value="4">4 opciones</option>
+                          <option value="5">5 opciones</option>
+                          <option value="6">6 opciones</option>
+                        </select>
+                        <ArrowRight className="absolute right-3 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 
