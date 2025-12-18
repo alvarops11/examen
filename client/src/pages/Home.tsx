@@ -50,6 +50,7 @@ export default function Home() {
   const [corregido, setCorregido] = useState(false);
   const [calificacion, setCalificacion] = useState<{
     aciertos: number;
+    blancas: number;
     total: number;
     porcentaje: number;
   } | null>(null);
@@ -156,11 +157,13 @@ export default function Home() {
   const handleCorregir = () => {
     if (!examen) return;
     let aciertos = 0;
+    let blancas = 0;
     respuestas.forEach((respuesta, index) => {
       if (respuesta === examen.questions[index].answerIndex) aciertos++;
+      if (respuesta === null) blancas++;
     });
     const porcentaje = Math.round((aciertos / examen.questions.length) * 100);
-    setCalificacion({ aciertos, total: examen.questions.length, porcentaje });
+    setCalificacion({ aciertos, blancas, total: examen.questions.length, porcentaje });
     setCorregido(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -396,7 +399,11 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-red-500 font-semibold">
                           <XCircle className="w-4 h-4" />
-                          {calificacion.total - calificacion.aciertos} Fallos
+                          {calificacion.total - calificacion.aciertos - calificacion.blancas} Fallos
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-400 font-semibold">
+                          <BookOpen className="w-4 h-4" />
+                          {calificacion.blancas} En Blanco
                         </div>
                       </div>
                     </motion.div>

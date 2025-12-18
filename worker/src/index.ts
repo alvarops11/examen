@@ -238,12 +238,12 @@ export default {
 Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
 Cada pregunta DEBE tener exactamente ${numeroRespuestas || 4} opciones de respuesta.
 
-DIRECTRICES DE DISEÑO CRÍTICAS (SIMETRÍA ABSOLUTA):
-1. SIMETRÍA VISUAL OBLIGATORIA: Todas las opciones deben ocupar un espacio visual similar. Si la respuesta correcta tiene 15 palabras, los distractores deben tener entre 14 y 16 palabras.
-2. ROMPER EL PATRÓN DE LONGITUD: En un 30% de las preguntas, haz que uno de los distractores sea LIGERAMENTE MÁS LARGO o más detallado que la respuesta correcta.
-3. NO AÑADIR EXPLICACIONES EN LA OPCIÓN: La respuesta correcta debe ser directa. Si necesitas explicar algo, hazlo en el campo "explanation", NO en el campo "choices".
-4. ESTRUCTURA PARALELA: Si la respuesta correcta es una frase compleja con subordinadas, los distractores DEBEN ser frases complejas con la misma estructura.
-5. DISTRACTORES DE ALTO NIVEL: No uses distractores cortos o simplistas. Deben ser tan técnicos y específicos como la respuesta correcta.
+DIRECTRICES DE DISEÑO CRÍTICAS (ANTI-SESGO DE LONGITUD):
+1. CAMUFLAJE TOTAL: Tienes terminantemente prohibido que la respuesta correcta sea sistemáticamente la más larga. Un usuario está aprobando tus exámenes solo mirando la longitud, lo cual es un FRACASO.
+2. REGLA DE LA OPCIÓN LARGA = DISTRACTOR: Si decides que una opción sea más detallada o técnica, esa opción DEBE SER UN DISTRACTOR. La respuesta correcta debe ser concisa o de longitud idéntica a las demás.
+3. SIMETRÍA VISUAL (±5%): El recuento de caracteres de las ${numeroRespuestas} opciones debe ser casi idéntico. Esfuérzate al máximo en que no haya diferencias visuales detectables.
+4. PARIDAD GRAMATICAL: Todas las opciones deben empezar con el mismo tipo de palabra (ej. todas por sustantivo) y mantener la misma estructura interna.
+5. SIN EXPLICACIONES EN LA OPCIÓN: La respuesta es una afirmación. No incluyas "porque..." o aclaraciones. Todo el detalle extra va en "explanation".
 
 FORMATO OBLIGATORIO (JSON):
 Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escribas introducción ni conclusión.

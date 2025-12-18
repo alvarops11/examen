@@ -36,7 +36,7 @@ export default function Estadisticas() {
     // Cálculos de métricas avanzadas
     const totalVisitas = stats?.visitors?.total || 1;
     const totalExamenes = stats?.exams?.total || 0;
-    const conversionRate = ((totalExamenes / totalVisitas) * 100).toFixed(1);
+    const conversionRate = Math.min((totalExamenes / totalVisitas) * 100, 100).toFixed(1);
 
     const totalGenTime = stats?.technical?.total_gen_time || 0;
     const avgGenTime = totalExamenes > 0 ? (totalGenTime / (totalExamenes * 1000)).toFixed(1) : "0.0";
@@ -49,6 +49,31 @@ export default function Estadisticas() {
         { label: "Tiempo Medio", value: `${avgGenTime}s`, icon: Clock, color: "text-amber-600", bg: "bg-amber-50", desc: "Velocidad de respuesta IA" },
         { label: "Media Preguntas", value: avgQuestions, icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", desc: "Longitud media de exámenes" },
         { label: "Total Exámenes", value: totalExamenes.toLocaleString(), icon: Sparkles, color: "text-purple-600", bg: "bg-purple-50", desc: "Generados históricamente" },
+    ];
+
+    const timeStats = [
+        {
+            title: "Visitantes",
+            icon: Users,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            data: [
+                { label: "Hoy", value: stats?.visitors?.today || 0 },
+                { label: "Este Mes", value: stats?.visitors?.month || 0 },
+                { label: "Total", value: stats?.visitors?.total || 0 },
+            ]
+        },
+        {
+            title: "Exámenes",
+            icon: BookOpen,
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+            data: [
+                { label: "Hoy", value: stats?.exams?.today || 0 },
+                { label: "Este Mes", value: stats?.exams?.month || 0 },
+                { label: "Total", value: stats?.exams?.total || 0 },
+            ]
+        }
     ];
 
     const difficultyData = [
@@ -114,6 +139,44 @@ export default function Estadisticas() {
                                 </div>
                                 <p className="text-xs text-slate-400 mt-2">{stat.desc}</p>
                             </Card>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Time-based Metrics Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    {timeStats.map((section, idx) => (
+                        <motion.div
+                            key={section.title}
+                            initial={{ opacity: 0, x: idx === 0 ? -20 : 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"
+                        >
+                            <h3 className="text-lg font-bold text-slate-900 mb-8 flex items-center gap-3">
+                                <div className={`p-2 rounded-xl ${section.bg} ${section.color}`}>
+                                    <section.icon className="w-5 h-5" />
+                                </div>
+                                Resumen de {section.title}
+                            </h3>
+                            <div className="grid grid-cols-3 gap-4">
+                                {section.data.map((item) => (
+                                    <div key={item.label} className="text-center group">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 group-hover:text-indigo-500 transition-colors">
+                                            {item.label}
+                                        </div>
+                                        <div className="text-2xl font-black text-slate-900">
+                                            {item.value.toLocaleString()}
+                                        </div>
+                                        <div className="mt-2 h-1.5 w-8 bg-slate-100 rounded-full mx-auto overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: "100%" }}
+                                                className={`h-full ${section.color.replace('text-', 'bg-')}`}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </motion.div>
                     ))}
                 </div>
