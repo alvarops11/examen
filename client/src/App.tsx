@@ -9,6 +9,10 @@ import AvisoLegal from "./pages/AvisoLegal";
 import Privacidad from "./pages/Privacidad";
 import Cookies from "./pages/Cookies";
 
+import HowToUse from "./pages/HowToUse";
+import FAQ from "./pages/FAQ";
+import Contact from "./pages/Contact";
+
 /**
  * ExamSphere - Generador de Exámenes con IA
  * Diseño: Minimalismo Académico Moderno
@@ -22,6 +26,9 @@ function Router() {
     <WouterRouter base={import.meta.env.BASE_URL}>
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/como-usar"} component={HowToUse} />
+        <Route path={"/faq"} component={FAQ} />
+        <Route path={"/contacto"} component={Contact} />
         <Route path={"/aviso-legal"} component={AvisoLegal} />
         <Route path={"/privacidad"} component={Privacidad} />
         <Route path={"/cookies"} component={Cookies} />

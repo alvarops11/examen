@@ -1,26 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useLocation } from "wouter";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function AvisoLegal() {
-    const [, setLocation] = useLocation();
-
     return (
-        <div className="min-h-screen pb-20 bg-slate-50">
-            {/* Background Decoration */}
-            <div className="fixed inset-0 pointer-events-none z-[-1]">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px]" />
-            </div>
+        <div className="min-h-screen flex flex-col pt-0 bg-slate-50">
+            <Header />
 
-            <div className="max-w-4xl mx-auto px-4 py-12">
-                <Button
-                    variant="ghost"
-                    onClick={() => setLocation("/")}
-                    className="mb-8 text-slate-600 hover:text-indigo-600 group"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                    Volver
-                </Button>
+            <div className="max-w-4xl mx-auto px-4 py-16 flex-grow">
 
                 <div className="glass-card rounded-2xl p-8 md:p-12">
                     <h1 className="text-4xl font-bold text-slate-900 mb-8 text-gradient">
@@ -40,6 +26,7 @@ export default function AvisoLegal() {
                                 <li><strong>Dominio:</strong> https://alvarops11.github.io/examen/</li>
                                 <li><strong>Actividad:</strong> Plataforma educativa de generación de exámenes mediante inteligencia artificial</li>
                                 <li><strong>Finalidad:</strong> Herramienta académica sin ánimo de lucro para estudiantes</li>
+                                <li><strong>Contacto:</strong> soporteexamsphere@gmail.com</li>
                             </ul>
                         </section>
 
@@ -118,6 +105,7 @@ export default function AvisoLegal() {
                     </div>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }

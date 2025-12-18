@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { generateExamWithOpenRouter } from "@/lib/geminiService";
 import { motion, AnimatePresence } from "framer-motion";
 import CookieBanner from "@/components/CookieBanner";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { Link } from "wouter";
 
 /**
@@ -172,33 +174,10 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-500/10 rounded-full blur-[100px]" />
       </div>
 
-      {/* Header */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="sticky top-0 z-50 glass-card border-b border-indigo-100/50"
-      >
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center p-3 overflow-hidden hover:scale-105 transition-transform duration-300">
-              <img src="/examen/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
-                ExamSphere
-              </h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide">AI POWERED LEARNING</p>
-            </div>
-          </div>
-          {examen && (
-            <Button variant="ghost" size="sm" onClick={handleNuevoExamen} className="text-slate-600 hover:text-indigo-600 group">
-              <ArrowRight className="w-4 h-4 mr-2 group-hover:rotate-180 transition-transform" />
-              Salir
-            </Button>
-          )}
-        </div>
-      </motion.header>
+      <Header
+        showExit={!!examen}
+        onExit={handleNuevoExamen}
+      />
 
       <main className="max-w-5xl mx-auto px-4 py-12 flex-grow">
         <AnimatePresence mode="wait">
@@ -517,30 +496,7 @@ export default function Home() {
         </AnimatePresence>
       </main>
 
-      {/* Footer con enlaces legales */}
-      <footer className="bg-slate-50 py-6">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">
-              © 2024 ExamSphere. Herramienta educativa sin ánimo de lucro.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-              <Link href="/aviso-legal" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                Aviso Legal
-              </Link>
-              <span className="text-slate-300">•</span>
-              <Link href="/privacidad" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                Privacidad
-              </Link>
-              <span className="text-slate-300">•</span>
-              <Link href="/cookies" className="text-slate-600 hover:text-indigo-600 transition-colors">
-                Cookies
-              </Link>
-
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Cookie Banner */}
       <CookieBanner />
