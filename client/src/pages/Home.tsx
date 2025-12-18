@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download } from "lucide-react";
 import { toast } from "sonner";
-import { generateExamWithOpenRouter } from "@/lib/geminiService";
+import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
+import { generateExamPDF } from "@/lib/pdfService";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -51,6 +53,10 @@ export default function Home() {
     total: number;
     porcentaje: number;
   } | null>(null);
+
+  useEffect(() => {
+    trackVisit();
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -167,6 +173,19 @@ export default function Home() {
     setCalificacion(null);
   };
 
+  // Descargar PDF
+  const handleDownloadPDF = (isCorregido: boolean) => {
+    if (!examen) return;
+    try {
+      trackEvent(isCorregido ? "pdf_corrected" : "pdf_normal");
+      generateExamPDF(examen, curso, isCorregido);
+      toast.success(`PDF ${isCorregido ? "corregido " : ""}descargado correctamente`);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      toast.error("Error al generar el PDF");
+    }
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden relative flex flex-col">
       {/* Background Decoration */}
@@ -204,7 +223,7 @@ export default function Home() {
                   Crea exámenes <span className="text-gradient">impecables</span><br />en segundos.
                 </h1>
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                  Sube tus apuntes, selecciona el nivel y deja que nuestra IA genere preguntas tipo test de calidad universitaria al instante.
+                  Sube tus apuntes, elige el nivel y crea tu examen con IA al instante.
                 </p>
               </div>
 
@@ -383,6 +402,29 @@ export default function Home() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(false)}
+                    className="bg-white/50 border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-xl"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF
+                  </Button>
+                  {corregido && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadPDF(true)}
+                      className="bg-white/50 border-green-100 text-green-600 hover:bg-green-50 rounded-xl"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Corregido
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Questions List */}

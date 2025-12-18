@@ -2,6 +2,7 @@
 export interface Env {
   OPENROUTER_API_KEY: string;
   OPENROUTER_API_KEY_BACKUP?: string;
+  STATS_KV: KVNamespace;
 }
 
 interface ExamQuestion {
@@ -53,9 +54,29 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
     "Access-Control-Allow-Headers": "Content-Type",
   };
+}
+
+// Helper for stats tracking
+async function incrementStat(kv: KVNamespace, key: string, amount: number = 1) {
+  try {
+    const current = await kv.get(key) || "0";
+    await kv.put(key, (parseInt(current) + amount).toString());
+  } catch (e) {
+    console.error(`Error updating stat ${key}:`, e);
+  }
+}
+
+async function incrementStatDaily(kv: KVNamespace, type: string, amount: number = 1) {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  await incrementStat(kv, `${type}:${today}`, amount);
+  await incrementStat(kv, `${type}:${thisMonth}`, amount);
+  await incrementStat(kv, `${type}:all`, amount);
 }
 
 // Helper para hacer fetch con retry y failover
@@ -96,6 +117,8 @@ async function fetchWithFailover(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
     // Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -104,11 +127,76 @@ export default {
       });
     }
 
+    // Stats Endpoint (GET /api/stats)
+    if (url.pathname === "/api/stats" && request.method === "GET") {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const stats = {
+        visitors: {
+          today: parseInt(await env.STATS_KV.get(`v:${today}`) || "0"),
+          month: parseInt(await env.STATS_KV.get(`v:${thisMonth}`) || "0"),
+          total: parseInt(await env.STATS_KV.get(`v:all`) || "0"),
+        },
+        exams: {
+          today: parseInt(await env.STATS_KV.get(`e:${today}`) || "0"),
+          month: parseInt(await env.STATS_KV.get(`e:${thisMonth}`) || "0"),
+          total: parseInt(await env.STATS_KV.get(`e:all`) || "0"),
+        },
+        difficulties: {
+          facil: parseInt(await env.STATS_KV.get(`diff:facil`) || "0"),
+          media: parseInt(await env.STATS_KV.get(`diff:media`) || "0"),
+          dificil: parseInt(await env.STATS_KV.get(`diff:dificil`) || "0"),
+        },
+        courses: {
+          "1º": parseInt(await env.STATS_KV.get(`course:1º`) || "0"),
+          "2º": parseInt(await env.STATS_KV.get(`course:2º`) || "0"),
+          "3º": parseInt(await env.STATS_KV.get(`course:3º`) || "0"),
+          "4º": parseInt(await env.STATS_KV.get(`course:4º`) || "0"),
+          "Máster": parseInt(await env.STATS_KV.get(`course:Máster`) || "0"),
+        },
+        technical: {
+          total_questions: parseInt(await env.STATS_KV.get(`stats:total_questions`) || "0"),
+          total_gen_time: parseInt(await env.STATS_KV.get(`stats:total_gen_time`) || "0"),
+        },
+        events: {
+          pdf_normal: parseInt(await env.STATS_KV.get(`event:pdf_normal`) || "0"),
+          pdf_corrected: parseInt(await env.STATS_KV.get(`event:pdf_corrected`) || "0"),
+        }
+      };
+
+      return new Response(JSON.stringify(stats), {
+        headers: { "Content-Type": "application/json", ...corsHeaders() },
+      });
+    }
+
+    // Track Visit Endpoint (POST /api/track-visit)
+    if (url.pathname === "/api/track-visit" && request.method === "POST") {
+      await incrementStatDaily(env.STATS_KV, 'v');
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders() },
+      });
+    }
+
+    // Track Event Endpoint (POST /api/track-event)
+    if (url.pathname === "/api/track-event" && request.method === "POST") {
+      const { event } = await request.json() as { event: string };
+      if (event) {
+        await incrementStat(env.STATS_KV, `event:${event}`);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders() },
+      });
+    }
+
+    // Existing Generate Endpoint
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405, headers: corsHeaders() });
     }
 
     try {
+      const startTime = Date.now();
       if (!env.OPENROUTER_API_KEY) {
         return new Response(JSON.stringify({ error: "Server misconfiguration: Missing API Key" }), {
           status: 500,
@@ -274,6 +362,14 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
           headers: { "Content-Type": "application/json", ...corsHeaders() },
         });
       }
+
+      // TRACK EXAM GENERATION AND METRICS
+      const duration = Date.now() - startTime;
+      await incrementStatDaily(env.STATS_KV, 'e');
+      await incrementStat(env.STATS_KV, `diff:${dificultad}`);
+      await incrementStat(env.STATS_KV, `course:${curso}`);
+      await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
+      await incrementStat(env.STATS_KV, `stats:total_gen_time`, duration);
 
       // Re-index IDs
       const finalQuestions = allQuestions.map((q, index) => ({

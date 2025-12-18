@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_OPENROUTER_API_KEY: ${{ secrets.DAM2 }}
+          VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

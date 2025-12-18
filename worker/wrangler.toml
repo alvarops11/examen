@@ -8,3 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "npm install && npm run build"
 cwd = "./"
+
+[[kv_namespaces]]
+binding = "STATS_KV"
+id = "4117b03e415c40a4a75445d71dd2e229"

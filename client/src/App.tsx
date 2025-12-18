@@ -12,6 +12,7 @@ import Cookies from "./pages/Cookies";
 import HowToUse from "./pages/HowToUse";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
+import Estadisticas from "./pages/Estadisticas";
 
 /**
  * ExamSphere - Generador de Exámenes con IA
@@ -32,6 +33,7 @@ function Router() {
         <Route path={"/aviso-legal"} component={AvisoLegal} />
         <Route path={"/privacidad"} component={Privacidad} />
         <Route path={"/cookies"} component={Cookies} />
+        <Route path={"/estadisticas"} component={Estadisticas} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
