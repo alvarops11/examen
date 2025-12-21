@@ -9,7 +9,7 @@ export default function Footer() {
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center p-2">
-                                <img src="/examen/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
+                                <img src="/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
                             </div>
                             <h3 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
                                 ExamSphere

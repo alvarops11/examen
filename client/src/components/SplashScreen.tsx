@@ -24,7 +24,7 @@ export function SplashScreen({ onStart }: SplashScreenProps) {
         >
             {/* Background with provided image inspiration (Abstract Gradient) */}
             <div className="absolute inset-0 z-0">
-                <img src="/examen/splash-bg.png" alt="Background" className="w-full h-full object-cover opacity-90" />
+                <img src="/splash-bg.png" alt="Background" className="w-full h-full object-cover opacity-90" />
                 <div className="absolute inset-0 bg-white/30 backdrop-blur-sm" />
             </div>
 
@@ -40,7 +40,7 @@ export function SplashScreen({ onStart }: SplashScreenProps) {
                     <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full scale-150 animate-pulse" />
 
                     <div className="w-32 h-32 md:w-48 md:h-48 bg-white/90 glass-card rounded-full shadow-2xl flex items-center justify-center p-6 backdrop-blur-xl border border-white/50 relative z-10">
-                        <img src="/examen/logo.png" alt="ExamSphere" className="w-full h-full object-contain drop-shadow-md" />
+                        <img src="/logo.png" alt="ExamSphere" className="w-full h-full object-contain drop-shadow-md" />
                     </div>
                 </motion.div>
 

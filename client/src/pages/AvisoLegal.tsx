@@ -24,7 +24,7 @@ export default function AvisoLegal() {
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li><strong>Denominación:</strong> ExamSphere</li>
-                                <li><strong>Dominio:</strong> https://alvarops11.github.io/examen/</li>
+                                <li><strong>Dominio:</strong> https://examsphere.me/</li>
                                 <li><strong>Actividad:</strong> Plataforma educativa de generación de exámenes mediante inteligencia artificial</li>
                                 <li><strong>Finalidad:</strong> Herramienta académica sin ánimo de lucro para estudiantes</li>
                                 <li><strong>Contacto:</strong> <a href={getMailLink("soporteexamsphere@gmail.com")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">soporteexamsphere@gmail.com</a></li>

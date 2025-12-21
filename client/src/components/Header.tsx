@@ -30,7 +30,7 @@ export default function Header({ showExit, onExit }: HeaderProps) {
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 cursor-pointer">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center p-2 overflow-hidden hover:scale-105 transition-transform duration-300">
-                        <img src="/examen/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
+                        <img src="/logo.png" alt="ExamSphere Logo" className="w-full h-full object-contain" />
                     </div>
                     <div>
                         <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">

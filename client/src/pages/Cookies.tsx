@@ -142,7 +142,7 @@ export default function Cookies() {
                                 <ol className="list-decimal pl-6 space-y-1 text-sm">
                                     <li>Ve a "Preferencias" → "Privacidad"</li>
                                     <li>Haz clic en "Gestionar datos de sitios web"</li>
-                                    <li>Busca "alvarops11.github.io" y elimínalo</li>
+                                    <li>Busca "examsphere.me" y elimínalo</li>
                                 </ol>
                             </div>
 
