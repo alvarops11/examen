@@ -230,6 +230,27 @@ export default function Home() {
                 <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
                   Sube tus apuntes, elige el nivel y crea tu examen con IA al instante.
                 </p>
+
+                {/* Direct Link Ad Placement */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="mt-6"
+                >
+                  <a
+                    href="https://otieu.com/4/10375878"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 hover:text-indigo-600 bg-indigo-50/50 px-4 py-2 rounded-full border border-indigo-100/50 transition-all hover:shadow-sm"
+                  >
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    ¡Oferta destacada para estudiantes! Ver más
+                  </a>
+                </motion.div>
               </div>
 
               <motion.div
