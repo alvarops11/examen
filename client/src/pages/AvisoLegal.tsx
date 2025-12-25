@@ -1,10 +1,16 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { getMailLink } from "@/lib/utils";
 
 export default function AvisoLegal() {
     return (
         <div className="min-h-screen flex flex-col pt-0 bg-slate-50">
+            <SEO
+                title="Aviso Legal"
+                description="Información legal sobre ExamSphere, propiedad intelectual y términos de uso."
+                canonicalPath="/aviso-legal"
+            />
             <Header />
 
             <div className="max-w-4xl mx-auto px-4 py-16 flex-grow">

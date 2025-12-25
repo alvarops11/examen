@@ -1,9 +1,15 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 export default function Cookies() {
     return (
         <div className="min-h-screen flex flex-col pt-0 bg-slate-50">
+            <SEO
+                title="Política de Cookies"
+                description="Información sobre el uso de cookies y almacenamiento local en ExamSphere."
+                canonicalPath="/cookies"
+            />
             <Header />
 
             <div className="max-w-4xl mx-auto px-4 py-16 flex-grow">

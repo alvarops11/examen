@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { BookOpen, Upload, Settings, CheckCircle, GraduationCap } from "lucide-react";
 import { Link } from "wouter";
@@ -35,6 +36,11 @@ export default function HowToUse() {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <SEO
+                title="Cómo Usar"
+                description="Aprende a generar exámenes con IA en segundos. Guía paso a paso para crear tus propios tests de estudio."
+                canonicalPath="/como-usar"
+            />
             <Header />
 
             <main className="flex-grow max-w-5xl mx-auto px-4 py-16">

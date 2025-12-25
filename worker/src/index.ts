@@ -116,7 +116,7 @@ async function fetchWithFailover(
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // Handle CORS preflight
@@ -173,7 +173,7 @@ export default {
 
     // Track Visit Endpoint (POST /api/track-visit)
     if (url.pathname === "/api/track-visit" && request.method === "POST") {
-      await incrementStatDaily(env.STATS_KV, 'v');
+      ctx.waitUntil(incrementStatDaily(env.STATS_KV, 'v'));
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
@@ -183,7 +183,7 @@ export default {
     if (url.pathname === "/api/track-event" && request.method === "POST") {
       const { event } = await request.json() as { event: string };
       if (event) {
-        await incrementStat(env.STATS_KV, `event:${event}`);
+        ctx.waitUntil(incrementStat(env.STATS_KV, `event:${event}`));
       }
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json", ...corsHeaders() },
@@ -214,48 +214,77 @@ export default {
         });
       }
 
-      const model = "nex-agi/deepseek-v3.1-nex-n1:free"; // Using the free model
+      const model = "xiaomi/mimo-v2-flash:free";
       const dificultadMap: Record<string, string> = {
         facil: "básicos y conceptos fundamentales",
         media: "comprensión, aplicación y análisis de conceptos",
         dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
       };
 
-      const chunks = splitText(temario);
+      // OPTIMIZACIÓN: Reducción de MaxChunkSize para mayor paralelismo (de 8000 a 3000)
+      const chunks = splitText(temario, 3000);
       let allQuestions: ExamQuestion[] = [];
 
       const totalChunks = chunks.length;
       const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
       const remainder = numeroPreguntas % totalChunks;
 
-      for (let i = 0; i < totalChunks; i++) {
+      const chunkPromises = chunks.map(async (chunkContent, i) => {
         const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
-        if (questionsForThisChunk <= 0) continue;
+        if (questionsForThisChunk <= 0) return [];
 
-        const chunkContent = chunks[i];
+        const systemPrompt = `Eres una inteligencia artificial que actúa como un profesor universitario experto en evaluación académica. Tu único objetivo es generar preguntas de opción múltiple perfectamente válidas para un examen oficial, a partir de un fragmento de temario que se te proporcionará. No eres un asistente general ni un generador creativo. Eres un evaluador experto.
 
-        const systemPrompt = `Eres un profesor universitario experto en crear exámenes de calidad.
-Tu tarea es generar ${questionsForThisChunk} preguntas de tipo test basadas EXCLUSIVAMENTE en el fragmento del temario proporcionado.
-Cada pregunta DEBE tener exactamente ${numeroRespuestas || 4} opciones de respuesta.
+Comportamiento general:
+- Actúa como un docente universitario con experiencia en evaluación rigurosa.
+- Evalúa solo con base en el contenido proporcionado. No completes lagunas, no infieras, no añadas ejemplos no presentes.
 
-DIRECTRICES DE DISEÑO CRÍTICAS (ANTI-SESGO DE LONGITUD):
-1. CAMUFLAJE TOTAL: Tienes terminantemente prohibido que la respuesta correcta sea sistemáticamente la más larga. Un usuario está aprobando tus exámenes solo mirando la longitud, lo cual es un FRACASO.
-2. REGLA DE LA OPCIÓN LARGA = DISTRACTOR: Si decides que una opción sea más detallada o técnica, esa opción DEBE SER UN DISTRACTOR. La respuesta correcta debe ser concisa o de longitud idéntica a las demás.
-3. SIMETRÍA VISUAL (±5%): El recuento de caracteres de las ${numeroRespuestas} opciones debe ser casi idéntico. Esfuérzate al máximo en que no haya diferencias visuales detectables.
-4. PARIDAD GRAMATICAL: Todas las opciones deben empezar con el mismo tipo de palabra (ej. todas por sustantivo) y mantener la misma estructura interna.
-5. SIN EXPLICACIONES EN LA OPCIÓN: La respuesta es una afirmación. No incluyas "porque..." o aclaraciones. Todo el detalle extra va en "explanation".
+Uso del temario (REGLA DE ORO):
+- Usa EXCLUSIVAMENTE la información contenida en el fragmento de temario proporcionado.
+- Todas las preguntas, opciones y explicaciones deben ser trazables directamente al texto.
+- Está terminantemente prohibido usar conocimientos externos o inventar contenidos.
+- PROHIBICIÓN DE REFERENCIAS INTERNAS: No menciones jamás identificadores de documentos, números de página, anexos o referencias cruzadas que aparezcan en el texto original (ej. "según el Doc. 48", "como indica la tabla 2", "véase pág 12"). El alumno NO ve el texto original, solo ve la pregunta. La pregunta debe ser 100% autodependiente.
+- Si alguna pregunta requiere una cita o parte del temario para su comprensión, ese fragmento debe estar integrado literalmente dentro del enunciado de la pregunta.
 
-FORMATO OBLIGATORIO (JSON):
-Devuelve ÚNICAMENTE un objeto JSON con la siguiente estructura exacta. NO escribas introducción ni conclusión.
+Generación de examen:
+- Genera exactamente ${questionsForThisChunk} preguntas.
+- Cada pregunta tendrá exactamente ${numeroRespuestas || 4} opciones.
+- Solo una opción es correcta, indicada en el campo answerIndex.
 
+Redacción del enunciado:
+- Plantea una única cuestión clara.
+- El enunciado debe entenderse sin necesidad de leer las opciones.
+- Usa lenguaje académico, sin vaguedades ni pistas implícitas.
+- EJEMPLO PROHIBIDO: "¿Qué dice el Doc. 48 sobre...?"
+- EJEMPLO CORRECTO: "¿Qué aspecto cultural llegó al territorio vasco a través del Camino de Santiago?" (eliminando la referencia al documento).
+
+Reglas críticas anti-sesgo de longitud:
+- La opción correcta no debe ser distinguible por longitud, tecnicismo o complejidad.
+- Si una opción es más larga o más técnica → debe ser un distractor incorrecto.
+- Todas las opciones deben ser visualmente simétricas (±5% de caracteres).
+- Todas las opciones deben seguir la misma estructura gramatical y sintáctica.
+- Está prohibido incluir aclaraciones, “porque…”, o definiciones dentro de las opciones.
+
+Sobre los distractores:
+- Todos los distractores deben ser plausibles y relacionados con el temario.
+- Deben fallar por errores conceptuales sutiles, no por ser absurdos o evidentes.
+- Evita pistas internas como absolutos solo en distractores o repetir palabras del enunciado solo en la correcta.
+
+Explicación:
+- Cada pregunta debe incluir una explicación breve, objetiva y académica que justifique solo la opción correcta.
+- No se deben explicar los distractores.
+- No se debe introducir información nueva.
+
+Formato de salida:
+- La salida debe ser un objeto JSON válido, sin ningún texto adicional, con la siguiente estructura exacta:
 {
   "questions": [
     {
       "id": 1,
-      "question": "Enunciado de la pregunta...",
-      "choices": ["Opción 1", "Opción 2", "..."],
-      "answerIndex": 0,
-      "explanation": "Breve justificación de la respuesta correcta"
+      "question": "Texto del enunciado claro y académico. Si se requiere citar un fragmento, debe ir aquí.",
+      "choices": ["Opción A", "Opción B", "Opción C", "Opción D"],
+      "answerIndex": 2,
+      "explanation": "Frase breve y justificada únicamente con el temario."
     }
   ]
 }`;
@@ -270,16 +299,19 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
         // Retries for robustness
         let attempts = 0;
         let success = false;
+        let chunkQuestions: ExamQuestion[] = [];
+
         while (attempts < 3 && !success) {
           try {
-            if (i > 0 && attempts === 0) await wait(1000); // Rate limit spacing
+            // Add slight jittered delay to avoid hitting rate limits exactly at the same time
+            if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
             const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://examsphere.app", // Optional
-                "X-Title": "ExamSphere", // Optional
+                "HTTP-Referer": "https://examsphere.app",
+                "X-Title": "ExamSphere",
               },
               body: JSON.stringify({
                 model: model,
@@ -299,15 +331,12 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
 
             const data: any = await response.json();
             let content = data.choices?.[0]?.message?.content || "";
-            // Limpieza básica de markdown
             content = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
-            // Intentar parsear el contenido directamente si es un bloque JSON limpio
             let parsed: any;
             try {
               parsed = JSON.parse(content);
             } catch (e) {
-              // Si falla, usar regex para buscar el objeto JSON
               const jsonMatch = content.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 try {
@@ -319,42 +348,35 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
             }
 
             if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
-              // MEJORA CRÍTICA: Aleatorizar respuestas aquí mismo para evitar sesgo de posición del modelo
-              const processedQuestions = parsed.questions.map((q: any) => {
-                const choices = [...q.choices]; // Copia del array
+              chunkQuestions = parsed.questions.map((q: any) => {
+                const choices = [...q.choices];
                 const correctChoice = choices[q.answerIndex];
-
-                // Shuffling choices (Fisher-Yates)
                 for (let j = choices.length - 1; j > 0; j--) {
                   const k = Math.floor(Math.random() * (j + 1));
                   [choices[j], choices[k]] = [choices[k], choices[j]];
                 }
-
-                // Find new index
                 let newAnswerIndex = choices.indexOf(correctChoice);
-                if (newAnswerIndex === -1) newAnswerIndex = 0; // Fallback por seguridad
-
+                if (newAnswerIndex === -1) newAnswerIndex = 0;
                 return {
                   ...q,
                   choices: choices,
                   answerIndex: newAnswerIndex
                 };
               });
-
-              allQuestions = [...allQuestions, ...processedQuestions];
               success = true;
             } else {
-              console.error("Invalid JSON structure received:", content.substring(0, 200));
               throw new Error("Invalid JSON structure");
             }
-
           } catch (e) {
             console.error(`Attempt ${attempts + 1} failed for chunk ${i}:`, e);
             attempts++;
-            await wait(2000 * attempts); // Exponential backoff
           }
         }
-      }
+        return chunkQuestions;
+      });
+
+      const results = await Promise.all(chunkPromises);
+      allQuestions = results.flat();
 
       if (allQuestions.length === 0) {
         return new Response(JSON.stringify({ error: "No se pudieron generar preguntas." }), {
@@ -363,13 +385,15 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
         });
       }
 
-      // TRACK EXAM GENERATION AND METRICS
+      // TRACK EXAM GENERATION AND METRICS (NON-BLOCKING with ctx.waitUntil)
       const duration = Date.now() - startTime;
-      await incrementStatDaily(env.STATS_KV, 'e');
-      await incrementStat(env.STATS_KV, `diff:${dificultad}`);
-      await incrementStat(env.STATS_KV, `course:${curso}`);
-      await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
-      await incrementStat(env.STATS_KV, `stats:total_gen_time`, duration);
+      ctx.waitUntil((async () => {
+        await incrementStatDaily(env.STATS_KV, 'e');
+        await incrementStat(env.STATS_KV, `diff:${dificultad}`);
+        await incrementStat(env.STATS_KV, `course:${curso}`);
+        await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
+        await incrementStat(env.STATS_KV, `stats:total_gen_time`, duration);
+      })());
 
       // Re-index IDs
       const finalQuestions = allQuestions.map((q, index) => ({

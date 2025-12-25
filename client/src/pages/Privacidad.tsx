@@ -1,10 +1,16 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { getMailLink } from "@/lib/utils";
 
 export default function Privacidad() {
     return (
         <div className="min-h-screen flex flex-col pt-0 bg-slate-50">
+            <SEO
+                title="Política de Privacidad"
+                description="Tu privacidad es nuestra prioridad. Descubre cómo protegemos tus datos y qué información (no) recopilamos."
+                canonicalPath="/privacidad"
+            />
             <Header />
 
             <div className="max-w-4xl mx-auto px-4 py-16 flex-grow">

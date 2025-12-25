@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { fetchStats } from "@/lib/geminiService";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area } from 'recharts';
 import { Users, BookOpen, Calendar, TrendingUp, Sparkles, Loader2, Clock, Target, FileDown, Brain, Zap } from "lucide-react";
 
@@ -94,6 +95,11 @@ export default function Estadisticas() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
+            <SEO
+                title="Estadísticas de Uso"
+                description="Métricas en tiempo real sobre el uso de nuestra IA: exámenes generados, niveles académicos y más."
+                canonicalPath="/estadisticas"
+            />
             <Header />
 
             <main className="flex-grow max-w-7xl mx-auto px-4 py-12 w-full">

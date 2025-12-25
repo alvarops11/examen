@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { ChevronDown, HelpCircle } from "lucide-react";
@@ -41,6 +42,11 @@ export default function FAQ() {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <SEO
+                title="Preguntas Frecuentes"
+                description="Resuelve tus dudas sobre ExamSphere: cómo funciona, privacidad, tipos de archivos y más."
+                canonicalPath="/faq"
+            />
             <Header />
 
             <main className="flex-grow max-w-4xl mx-auto px-4 py-16">

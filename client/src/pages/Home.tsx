@@ -11,6 +11,7 @@ import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
+import SEO from "@/components/SEO";
 
 /**
  * Diseño: Neo-Academic Premium
@@ -191,6 +192,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-x-hidden relative flex flex-col">
+      <SEO />
       {/* Background Decoration */}
       <div className="fixed inset-0 pointer-events-none z-[-1]">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px]" />

@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Mail, MessageSquare, Bug, Send } from "lucide-react";
 import { useState } from "react";
@@ -40,6 +41,11 @@ export default function Contact() {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <SEO
+                title="Contacto"
+                description="¿Tienes alguna duda o sugerencia? Contacta con nosotros. Estamos aquí para ayudarte a mejorar tu estudio."
+                canonicalPath="/contacto"
+            />
             <Header />
 
             <main className="flex-grow max-w-6xl mx-auto px-4 py-16 w-full">
