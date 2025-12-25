@@ -70,17 +70,6 @@ export default function Home() {
 
   useEffect(() => {
     trackVisit();
-
-    // Lógica de Monetización OnClick por Probabilidad (7%)
-    const handleGlobalClick = () => {
-      const probability = 0.07; // 7% de probabilidad
-      if (Math.random() < probability) {
-        triggerAd();
-      }
-    };
-
-    window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
