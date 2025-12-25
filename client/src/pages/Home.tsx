@@ -355,13 +355,6 @@ export default function Home() {
                   </Button>
                 </div>
               </motion.div>
-
-              {/* Ad Placement Home */}
-              <div className="mt-8 flex justify-center">
-                <div id="container-196146" className="w-full max-w-[728px] min-h-[90px] bg-slate-100/50 rounded-lg flex items-center justify-center text-slate-400 text-sm">
-                  Publicidad
-                </div>
-              </div>
             </motion.div>
           ) : (
             <motion.div

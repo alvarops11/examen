@@ -118,13 +118,6 @@ export default function FAQ() {
                         </span>
                     </Link>
                 </motion.div>
-
-                {/* Ad Placement FAQ */}
-                <div className="mt-12 flex justify-center">
-                    <div id="container-196146-faq" className="w-full max-w-[728px] min-h-[90px] bg-slate-100/50 rounded-lg flex items-center justify-center text-slate-400 text-sm italic">
-                        Publicidad
-                    </div>
-                </div>
             </main>
 
             <Footer />
