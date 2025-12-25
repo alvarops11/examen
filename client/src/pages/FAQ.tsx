@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown, HelpCircle, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
 export default function FAQ() {
@@ -120,15 +120,18 @@ export default function FAQ() {
                 </motion.div>
 
                 {/* Direct Links FAQ */}
-                <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        Recursos Gratuitos para tu Grado
-                    </a>
-                    <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                        Trucos para Aprobar sin Estudiar (IA)
-                    </a>
+                <div className="mt-12">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Anuncios Patrocinados</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center justify-between group">
+                            <span className="group-hover:text-indigo-600 transition-colors text-xs">Becas y Recursos de Grado</span>
+                            <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                        </a>
+                        <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center justify-between group">
+                            <span className="group-hover:text-indigo-600 transition-colors text-xs">Mejora tus notas con IA</span>
+                            <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                        </a>
+                    </div>
                 </div>
             </main>
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Megaphone, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
@@ -146,11 +146,15 @@ export default function Home() {
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Redirigir a un Direct Link aleatorio (Monetización)
+      // Redirigir a un Direct Link aleatorio (Monetización Transparente)
       const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
       setTimeout(() => {
+        toast.info("Abriendo enlace patrocinado de un colaborador...", {
+          icon: "🚀",
+          duration: 3000
+        });
         window.open(randomLink, '_blank');
-      }, 500);
+      }, 800);
     } catch (error) {
       console.error("Error:", error);
       toast.error(error instanceof Error ? error.message : "Error al generar el examen");
@@ -251,26 +255,29 @@ export default function Home() {
                   transition={{ delay: 0.8 }}
                   className="mt-6 flex flex-wrap justify-center gap-3"
                 >
-                  <a
-                    href={DIRECT_LINKS[0]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 hover:text-indigo-600 bg-indigo-50/50 px-4 py-2 rounded-full border border-indigo-100/50 transition-all hover:shadow-sm"
-                  >
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                    </span>
-                    ¡Becas y Ayudas 2024!
-                  </a>
-                  <a
-                    href={DIRECT_LINKS[1]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-fuchsia-500 hover:text-fuchsia-600 bg-fuchsia-50/50 px-4 py-2 rounded-full border border-fuchsia-100/50 transition-all hover:shadow-sm"
-                  >
-                    Cursos Gratuitos con Certificado
-                  </a>
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publicidad</span>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <a
+                        href={DIRECT_LINKS[0]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm transition-all hover:border-indigo-200"
+                      >
+                        <Megaphone className="w-3 h-3 text-indigo-500" />
+                        Ofertas para Estudiantes
+                      </a>
+                      <a
+                        href={DIRECT_LINKS[1]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-fuchsia-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm transition-all hover:border-fuchsia-200"
+                      >
+                        <ExternalLink className="w-3 h-3 text-fuchsia-500" />
+                        Recursos Académicos
+                      </a>
+                    </div>
+                  </div>
                 </motion.div>
               </div>
 
@@ -487,20 +494,22 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white/20 rounded-xl">
-                      <Sparkles className="w-6 h-6 text-white" />
+                      <Megaphone className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-lg">¿Quieres mejorar tus resultados?</h4>
-                      <p className="text-white/80 text-sm">Descubre cursos recomendados y tutorías personalizadas para tu nivel.</p>
+                      <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Contenido Patrocinado</div>
+                      <h4 className="font-bold text-lg">¿Buscas más recursos de estudio?</h4>
+                      <p className="text-white/80 text-sm">Visita a nuestros colaboradores para descubrir ofertas exclusivas.</p>
                     </div>
                   </div>
                   <a
                     href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-white/90 transition-colors shrink-0"
+                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-white/90 transition-colors shrink-0 flex items-center gap-2"
                   >
-                    Ver Ofertas Ahora
+                    Ver Anuncio
+                    <ExternalLink className="w-4 h-4" />
                   </a>
                 </motion.div>
               )}
