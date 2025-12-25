@@ -162,14 +162,13 @@ export default function Home() {
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Redirigir a un Direct Link aleatorio (Monetización Transparente)
-      const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
+      // Redirigir a un Direct Link (Monetización por Evento - 100%)
       setTimeout(() => {
-        toast.info("Abriendo enlace patrocinado de un colaborador...", {
+        toast.info("Abriendo contenido patrocinado...", {
           icon: "🚀",
           duration: 3000
         });
-        window.open(randomLink, '_blank');
+        triggerAd();
       }, 800);
     } catch (error) {
       console.error("Error:", error);
@@ -217,6 +216,9 @@ export default function Home() {
       trackEvent(isCorregido ? "pdf_corrected" : "pdf_normal");
       generateExamPDF(examen, curso, isCorregido);
       toast.success(`PDF ${isCorregido ? "corregido " : ""}descargado correctamente`);
+
+      // Forzar anuncio al descargar (Monetización por Evento - 100%)
+      setTimeout(triggerAd, 500);
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.error("Error al generar el PDF");
@@ -264,34 +266,34 @@ export default function Home() {
                   Sube tus apuntes, elige el nivel y crea tu examen con IA al instante.
                 </p>
 
-                {/* Direct Link Ad Placement - Chollos */}
+                {/* Direct Link Ad Placement - Profesional */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.8 }}
                   className="mt-6 flex flex-col items-center gap-2"
                 >
-                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-tighter animate-bounce">
-                    🔥 Chollo del día
+                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                    Oferta Seleccionada
                   </div>
                   <div className="flex flex-wrap justify-center gap-3">
                     <a
                       href={DIRECT_LINKS[2]}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:scale-105 active:scale-95"
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:border-indigo-200"
                     >
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      Ver Oferta AliExpress
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      Promoción AliExpress
                     </a>
                     <a
                       href={DIRECT_LINKS[3]}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-fuchsia-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:scale-105 active:scale-95"
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-fuchsia-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:border-fuchsia-200"
                     >
-                      <Sparkles className="w-4 h-4 text-fuchsia-500" />
-                      Ofertas de HOY
+                      <Sparkles className="w-4 h-4 text-fuchsia-400" />
+                      Ofertas Destacadas
                     </a>
                   </div>
                 </motion.div>
@@ -501,30 +503,30 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Post-Exam Ad - Chollos */}
+              {/* Post-Exam Ad - Profesional */}
               {corregido && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-amber-500 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border-4 border-amber-300 animate-pulse-slow"
+                  className="bg-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border border-slate-800"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/20 rounded-xl">
-                      <Sparkles className="w-6 h-6 text-white" />
+                    <div className="p-3 bg-white/10 rounded-xl">
+                      <Sparkles className="w-6 h-6 text-indigo-400" />
                     </div>
                     <div>
-                      <div className="text-[10px] font-black text-white/90 uppercase tracking-widest mb-1">¡CHOLLO EXCLUSIVO!</div>
-                      <h4 className="font-bold text-lg text-white">Oferta del día en AliExpress</h4>
-                      <p className="text-white/90 text-sm">Aprovecha descuentos de hasta el 70% solo por tiempo limitado.</p>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Anuncio Patrocinado</div>
+                      <h4 className="font-bold text-lg text-white">Promociones destacadas en AliExpress</h4>
+                      <p className="text-slate-400 text-sm">Explora una selección exclusiva de productos con precios especiales.</p>
                     </div>
                   </div>
                   <a
                     href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 bg-white text-amber-600 rounded-xl font-black text-sm hover:scale-105 transition-transform shrink-0 flex items-center gap-2 shadow-lg"
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shrink-0 flex items-center gap-2 shadow-lg"
                   >
-                    VER CHOLLO
+                    Ver Oferta
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </motion.div>

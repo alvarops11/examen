@@ -119,21 +119,17 @@ export default function FAQ() {
                     </Link>
                 </motion.div>
 
-                {/* Direct Links FAQ - Chollos */}
+                {/* Direct Links FAQ - Profesional */}
                 <div className="mt-12">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <Sparkles className="w-4 h-4 text-amber-500" />
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Chollos del día</div>
-                        <Sparkles className="w-4 h-4 text-amber-500" />
-                    </div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Enlaces Patrocinados</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border-2 border-amber-100 bg-amber-50/30 shadow-sm hover:shadow-md transition-all text-sm font-bold text-slate-700 flex items-center justify-between group">
-                            <span className="group-hover:text-amber-600 transition-colors">🔥 Ofertas Flash AliExpress</span>
-                            <ExternalLink className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                        <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-semibold text-slate-600 flex items-center justify-between group">
+                            <span className="group-hover:text-indigo-600 transition-colors">Ofertas Destacadas AliExpress</span>
+                            <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                         </a>
-                        <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border-2 border-amber-100 bg-amber-50/30 shadow-sm hover:shadow-md transition-all text-sm font-bold text-slate-700 flex items-center justify-between group">
-                            <span className="group-hover:text-amber-600 transition-colors">💎 Super Chollos HOY</span>
-                            <ExternalLink className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                        <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-semibold text-slate-600 flex items-center justify-between group">
+                            <span className="group-hover:text-indigo-600 transition-colors">Promociones Seleccionadas</span>
+                            <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                         </a>
                     </div>
                 </div>
