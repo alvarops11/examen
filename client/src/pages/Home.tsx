@@ -43,6 +43,11 @@ const DIRECT_LINKS = [
   "https://otieu.com/4/10375903"
 ];
 
+const triggerAd = () => {
+  const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
+  window.open(randomLink, '_blank');
+};
+
 export default function Home() {
   // Estado del formulario
   const [curso, setCurso] = useState("1º");
@@ -66,17 +71,12 @@ export default function Home() {
   useEffect(() => {
     trackVisit();
 
-    // Lógica de Monetización OnClick (Direct Link)
-    let clicked = false;
+    // Lógica de Monetización OnClick por Probabilidad (7%)
     const handleGlobalClick = () => {
-      if (clicked) return;
-      clicked = true;
-
-      const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
-      // Pequeño delay para no interferir con la acción original inmediatamente
-      setTimeout(() => {
-        window.open(randomLink, '_blank');
-      }, 100);
+      const probability = 0.07; // 7% de probabilidad
+      if (Math.random() < probability) {
+        triggerAd();
+      }
     };
 
     window.addEventListener('click', handleGlobalClick);

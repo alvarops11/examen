@@ -43,10 +43,10 @@ export default function Footer() {
 
                     {/* Promoted */}
                     <div>
-                        <h4 className="text-amber-600 font-black mb-4 text-sm uppercase tracking-wider">🔥 Chollos</h4>
+                        <h4 className="text-slate-900 font-bold mb-4 text-sm uppercase tracking-wider text-indigo-600">Patrocinado</h4>
                         <ul className="space-y-3 text-sm">
-                            <li><a href="https://otieu.com/4/10375892" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-amber-600 transition-colors font-bold">AliExpress Ofertas</a></li>
-                            <li><a href="https://otieu.com/4/10375903" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-amber-600 transition-colors font-bold">Descuentos de HOY</a></li>
+                            <li><a href="https://otieu.com/4/10375892" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors font-semibold">Promociones AliExpress</a></li>
+                            <li><a href="https://otieu.com/4/10375903" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors font-semibold">Ofertas Seleccionadas</a></li>
                         </ul>
                     </div>
                 </div>
