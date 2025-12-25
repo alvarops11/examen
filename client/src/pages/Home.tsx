@@ -43,10 +43,7 @@ const DIRECT_LINKS = [
   "https://otieu.com/4/10375903"
 ];
 
-const triggerAd = () => {
-  const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
-  window.open(randomLink, '_blank');
-};
+
 
 export default function Home() {
   // Estado del formulario
@@ -151,14 +148,7 @@ export default function Home() {
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Redirigir a un Direct Link (Monetización por Evento - 100%)
-      setTimeout(() => {
-        toast.info("Abriendo contenido patrocinado...", {
-          icon: "🚀",
-          duration: 3000
-        });
-        triggerAd();
-      }, 800);
+
     } catch (error) {
       console.error("Error:", error);
       toast.error(error instanceof Error ? error.message : "Error al generar el examen");
@@ -206,8 +196,7 @@ export default function Home() {
       generateExamPDF(examen, curso, isCorregido);
       toast.success(`PDF ${isCorregido ? "corregido " : ""}descargado correctamente`);
 
-      // Forzar anuncio al descargar (Monetización por Evento - 100%)
-      setTimeout(triggerAd, 500);
+
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.error("Error al generar el PDF");
