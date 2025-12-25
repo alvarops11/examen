@@ -503,34 +503,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Post-Exam Ad - Profesional */}
-              {corregido && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border border-slate-800"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/10 rounded-xl">
-                      <Sparkles className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Anuncio Patrocinado</div>
-                      <h4 className="font-bold text-lg text-white">Promociones destacadas en AliExpress</h4>
-                      <p className="text-slate-400 text-sm">Explora una selección exclusiva de productos con precios especiales.</p>
-                    </div>
-                  </div>
-                  <a
-                    href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shrink-0 flex items-center gap-2 shadow-lg"
-                  >
-                    Ver Oferta
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </motion.div>
-              )}
+
 
               {/* Questions List */}
               <div className="space-y-6">
@@ -657,6 +630,35 @@ export default function Home() {
                   </Button>
                 )}
               </motion.div>
+
+              {/* Post-Exam Ad - Profesional (Debajo de botón nuevo examen) */}
+              {corregido && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 mb-12 bg-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border border-slate-800"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/10 rounded-xl">
+                      <Sparkles className="w-6 h-6 text-indigo-400" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Anuncio Patrocinado</div>
+                      <h4 className="font-bold text-lg text-white">Promociones destacadas en AliExpress</h4>
+                      <p className="text-slate-400 text-sm">Explora una selección exclusiva de productos con precios especiales.</p>
+                    </div>
+                  </div>
+                  <a
+                    href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shrink-0 flex items-center gap-2 shadow-lg"
+                  >
+                    Ver Oferta
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
