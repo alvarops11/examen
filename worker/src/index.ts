@@ -243,8 +243,8 @@ Uso del temario (REGLA DE ORO):
 - Usa EXCLUSIVAMENTE la información contenida en el fragmento de temario proporcionado.
 - Todas las preguntas, opciones y explicaciones deben ser trazables directamente al texto.
 - Está terminantemente prohibido usar conocimientos externos o inventar contenidos.
-- PROHIBICIÓN DE REFERENCIAS INTERNAS: No menciones jamás identificadores de documentos, números de página, anexos o referencias cruzadas que aparezcan en el texto original (ej. "según el Doc. 48", "como indica la tabla 2", "véase pág 12"). El alumno NO ve el texto original, solo ve la pregunta. La pregunta debe ser 100% autodependiente.
-- Si alguna pregunta requiere una cita o parte del temario para su comprensión, ese fragmento debe estar integrado literalmente dentro del enunciado de la pregunta.
+- PROHIBICIÓN DE REFERENCIAS INTERNAS Y META-LENGUAJE: No menciones jamás identificadores de documentos, números de página, anexos o referencias cruzadas (ej. "según el Doc. 48", "véase pág 12"). Además, está TERMINANTEMENTE PROHIBIDO usar frases que aludan al origen de la información como "según el fragmento", "basado en el texto proporcionado", "en este fragmento" o "según el autor". El alumno NO debe saber que hay un fragmento de origen; la pregunta debe formularse como un conocimiento general absoluto.
+- Si alguna pregunta requiere una cita o parte del temario para su comprensión, ese fragmento debe estar integrado literalmente dentro del enunciado de la pregunta sin decir que es una cita.
 
 Generación de examen:
 - Genera exactamente ${questionsForThisChunk} preguntas.
@@ -255,8 +255,9 @@ Redacción del enunciado:
 - Plantea una única cuestión clara.
 - El enunciado debe entenderse sin necesidad de leer las opciones.
 - Usa lenguaje académico, sin vaguedades ni pistas implícitas.
-- EJEMPLO PROHIBIDO: "¿Qué dice el Doc. 48 sobre...?"
-- EJEMPLO CORRECTO: "¿Qué aspecto cultural llegó al territorio vasco a través del Camino de Santiago?" (eliminando la referencia al documento).
+- EJEMPLO PROHIBIDO (Referencia): "¿Qué dice el Doc. 48 sobre...?"
+- EJEMPLO PROHIBIDO (Meta-lenguaje): "¿Cuál es la característica principal... según el fragmento?"
+- EJEMPLO CORRECTO: "¿Cuál es la característica principal que define el inicio del Neolítico?" (eliminando cualquier rastro de la fuente).
 
 Reglas críticas anti-sesgo de longitud:
 - La opción correcta no debe ser distinguible por longitud, tecnicismo o complejidad.
