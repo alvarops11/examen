@@ -65,6 +65,22 @@ export default function Home() {
 
   useEffect(() => {
     trackVisit();
+
+    // Lógica de Monetización OnClick (Direct Link)
+    let clicked = false;
+    const handleGlobalClick = () => {
+      if (clicked) return;
+      clicked = true;
+
+      const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
+      // Pequeño delay para no interferir con la acción original inmediatamente
+      setTimeout(() => {
+        window.open(randomLink, '_blank');
+      }, 100);
+    };
+
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -248,35 +264,35 @@ export default function Home() {
                   Sube tus apuntes, elige el nivel y crea tu examen con IA al instante.
                 </p>
 
-                {/* Direct Link Ad Placement */}
+                {/* Direct Link Ad Placement - Chollos */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.8 }}
-                  className="mt-6 flex flex-wrap justify-center gap-3"
+                  className="mt-6 flex flex-col items-center gap-2"
                 >
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publicidad</span>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      <a
-                        href={DIRECT_LINKS[0]}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm transition-all hover:border-indigo-200"
-                      >
-                        <Megaphone className="w-3 h-3 text-indigo-500" />
-                        Ofertas para Estudiantes
-                      </a>
-                      <a
-                        href={DIRECT_LINKS[1]}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-fuchsia-600 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm transition-all hover:border-fuchsia-200"
-                      >
-                        <ExternalLink className="w-3 h-3 text-fuchsia-500" />
-                        Recursos Académicos
-                      </a>
-                    </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-tighter animate-bounce">
+                    🔥 Chollo del día
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <a
+                      href={DIRECT_LINKS[2]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:scale-105 active:scale-95"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      Ver Oferta AliExpress
+                    </a>
+                    <a
+                      href={DIRECT_LINKS[3]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-fuchsia-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:scale-105 active:scale-95"
+                    >
+                      <Sparkles className="w-4 h-4 text-fuchsia-500" />
+                      Ofertas de HOY
+                    </a>
                   </div>
                 </motion.div>
               </div>
@@ -485,31 +501,31 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Post-Exam Ad */}
+              {/* Post-Exam Ad - Chollos */}
               {corregido && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl"
+                  className="bg-amber-500 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border-4 border-amber-300 animate-pulse-slow"
                 >
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-white/20 rounded-xl">
-                      <Megaphone className="w-6 h-6 text-white" />
+                      <Sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <div className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Contenido Patrocinado</div>
-                      <h4 className="font-bold text-lg">¿Buscas más recursos de estudio?</h4>
-                      <p className="text-white/80 text-sm">Visita a nuestros colaboradores para descubrir ofertas exclusivas.</p>
+                      <div className="text-[10px] font-black text-white/90 uppercase tracking-widest mb-1">¡CHOLLO EXCLUSIVO!</div>
+                      <h4 className="font-bold text-lg text-white">Oferta del día en AliExpress</h4>
+                      <p className="text-white/90 text-sm">Aprovecha descuentos de hasta el 70% solo por tiempo limitado.</p>
                     </div>
                   </div>
                   <a
                     href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-white/90 transition-colors shrink-0 flex items-center gap-2"
+                    className="px-6 py-3 bg-white text-amber-600 rounded-xl font-black text-sm hover:scale-105 transition-transform shrink-0 flex items-center gap-2 shadow-lg"
                   >
-                    Ver Anuncio
-                    <ExternalLink className="w-4 h-4" />
+                    VER CHOLLO
+                    <ArrowRight className="w-4 h-4" />
                   </a>
                 </motion.div>
               )}
