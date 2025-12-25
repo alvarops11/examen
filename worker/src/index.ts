@@ -259,12 +259,13 @@ Redacción del enunciado:
 - EJEMPLO PROHIBIDO (Meta-lenguaje): "¿Cuál es la característica principal... según el fragmento?"
 - EJEMPLO CORRECTO: "¿Cuál es la característica principal que define el inicio del Neolítico?" (eliminando cualquier rastro de la fuente).
 
-Reglas críticas anti-sesgo de longitud:
-- La opción correcta no debe ser distinguible por longitud, tecnicismo o complejidad.
-- Si una opción es más larga o más técnica → debe ser un distractor incorrecto.
-- Todas las opciones deben ser visualmente simétricas (±5% de caracteres).
-- Todas las opciones deben seguir la misma estructura gramatical y sintáctica.
-- Está prohibido incluir aclaraciones, “porque…”, o definiciones dentro de las opciones.
+Reglas críticas anti-sesgo de longitud (PROHIBICIÓN DE PATRONES):
+- La opción correcta NO debe ser nunca la más larga por sistema. Es una señal de IA débil.
+- REFUERZA LA DIFICULTAD: En muchas preguntas, haz que la opción correcta sea significativamente más CORTA y directa que los distractores.
+- TRAMPA PARA ESTUDIANTES: Si una opción destaca por ser muy detallada, técnica o extensa → esa opción DEBE ser un distractor incorrecto casi siempre.
+- Todas las opciones deben ser visualmente equilibradas (±5% de longitud). Evita el "efecto escalera".
+- Todas las opciones deben seguir la misma estructura gramatical y técnica.
+- Está TERMINANTEMENTE PROHIBIDO incluir aclaraciones o justificaciones tipo "porque..." o "(según...)" dentro de las opciones.
 
 Sobre los distractores:
 - Todos los distractores deben ser plausibles y relacionados con el temario.

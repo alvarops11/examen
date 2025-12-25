@@ -43,6 +43,11 @@ const DIRECT_LINKS = [
   "https://otieu.com/4/10375903"
 ];
 
+const triggerAd = () => {
+  const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
+  window.open(randomLink, '_blank');
+};
+
 
 
 export default function Home() {
@@ -148,6 +153,15 @@ export default function Home() {
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
+      // Redirigir a un Direct Link patrocinado (Monetización por Evento)
+      setTimeout(() => {
+        toast.info("Cargando contenido patrocinado...", {
+          icon: "🚀",
+          duration: 3000
+        });
+        triggerAd();
+      }, 800);
+
 
     } catch (error) {
       console.error("Error:", error);
@@ -195,6 +209,9 @@ export default function Home() {
       trackEvent(isCorregido ? "pdf_corrected" : "pdf_normal");
       generateExamPDF(examen, curso, isCorregido);
       toast.success(`PDF ${isCorregido ? "corregido " : ""}descargado correctamente`);
+
+      // Forzar anuncio al descargar (Monetización por Evento)
+      setTimeout(triggerAd, 500);
 
 
     } catch (error) {
