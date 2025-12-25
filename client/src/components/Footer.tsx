@@ -40,6 +40,15 @@ export default function Footer() {
                             <li><Link href="/cookies" className="text-slate-600 hover:text-indigo-600 transition-colors">Política de Cookies</Link></li>
                         </ul>
                     </div>
+
+                    {/* Promoted */}
+                    <div>
+                        <h4 className="text-indigo-600 font-bold mb-4 text-sm uppercase tracking-wider">Patrocinado</h4>
+                        <ul className="space-y-3 text-sm">
+                            <li><a href="https://otieu.com/4/10375892" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors">Ofertas Educación</a></li>
+                            <li><a href="https://otieu.com/4/10375903" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors">Software Estudiantes</a></li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">

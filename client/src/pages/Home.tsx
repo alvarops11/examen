@@ -36,6 +36,13 @@ interface ExamData {
 
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
 
+const DIRECT_LINKS = [
+  "https://otieu.com/4/10375892",
+  "https://otieu.com/4/10375901",
+  "https://otieu.com/4/10375902",
+  "https://otieu.com/4/10375903"
+];
+
 export default function Home() {
   // Estado del formulario
   const [curso, setCurso] = useState("1º");
@@ -138,6 +145,12 @@ export default function Home() {
       setCalificacion(null);
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Redirigir a un Direct Link aleatorio (Monetización)
+      const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
+      setTimeout(() => {
+        window.open(randomLink, '_blank');
+      }, 500);
     } catch (error) {
       console.error("Error:", error);
       toast.error(error instanceof Error ? error.message : "Error al generar el examen");
@@ -236,10 +249,10 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.8 }}
-                  className="mt-6"
+                  className="mt-6 flex flex-wrap justify-center gap-3"
                 >
                   <a
-                    href="https://otieu.com/4/10375878"
+                    href={DIRECT_LINKS[0]}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 hover:text-indigo-600 bg-indigo-50/50 px-4 py-2 rounded-full border border-indigo-100/50 transition-all hover:shadow-sm"
@@ -248,7 +261,15 @@ export default function Home() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                     </span>
-                    ¡Oferta destacada para estudiantes! Ver más
+                    ¡Becas y Ayudas 2024!
+                  </a>
+                  <a
+                    href={DIRECT_LINKS[1]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-fuchsia-500 hover:text-fuchsia-600 bg-fuchsia-50/50 px-4 py-2 rounded-full border border-fuchsia-100/50 transition-all hover:shadow-sm"
+                  >
+                    Cursos Gratuitos con Certificado
                   </a>
                 </motion.div>
               </div>
@@ -456,6 +477,33 @@ export default function Home() {
                   )}
                 </div>
               </div>
+
+              {/* Post-Exam Ad */}
+              {corregido && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-indigo-600 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/20 rounded-xl">
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">¿Quieres mejorar tus resultados?</h4>
+                      <p className="text-white/80 text-sm">Descubre cursos recomendados y tutorías personalizadas para tu nivel.</p>
+                    </div>
+                  </div>
+                  <a
+                    href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-white/90 transition-colors shrink-0"
+                  >
+                    Ver Ofertas Ahora
+                  </a>
+                </motion.div>
+              )}
 
               {/* Questions List */}
               <div className="space-y-6">

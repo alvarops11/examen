@@ -118,9 +118,21 @@ export default function FAQ() {
                         </span>
                     </Link>
                 </motion.div>
+
+                {/* Direct Links FAQ */}
+                <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Recursos Gratuitos para tu Grado
+                    </a>
+                    <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-medium text-slate-600 flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                        Trucos para Aprobar sin Estudiar (IA)
+                    </a>
+                </div>
             </main>
 
             <Footer />
-        </div>
+        </div >
     );
 }
