@@ -214,7 +214,7 @@ export default {
         });
       }
 
-      const model = "google/gemini-2.0-flash-lite-preview-02-05:free";
+      const model = "openrouter/auto";
       const dificultadMap: Record<string, string> = {
         facil: "básicos y conceptos fundamentales",
         media: "comprensión, aplicación y análisis de conceptos",
