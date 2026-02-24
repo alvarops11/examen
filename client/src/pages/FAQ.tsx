@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { ChevronDown, HelpCircle, ExternalLink, Sparkles } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function FAQ() {
@@ -18,7 +18,7 @@ export default function FAQ() {
         },
         {
             question: "¿Es gratuita la plataforma?",
-            answer: "Sí, ExamSphere es una herramienta de acceso gratuito para los estudiantes. Para mantener la infraestructura y seguir innovando sin coste para el usuario, el proyecto se financia a través de publicidad relevante y enlaces de afiliados."
+            answer: "Sí, ExamSphere es actualmente una herramienta gratuita sin ánimo de lucro diseñada para ayudar a estudiantes a preparar sus exámenes de manera más eficiente."
         },
         {
             question: "¿Qué IA utiliza para generar las preguntas?",
@@ -119,20 +119,7 @@ export default function FAQ() {
                     </Link>
                 </motion.div>
 
-                {/* Direct Links FAQ - Profesional */}
-                <div className="mt-12">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Enlaces Patrocinados</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <a href="https://otieu.com/4/10375901" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-semibold text-slate-600 flex items-center justify-between group">
-                            <span className="group-hover:text-indigo-600 transition-colors">Ofertas Destacadas AliExpress</span>
-                            <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                        </a>
-                        <a href="https://otieu.com/4/10375902" target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all text-sm font-semibold text-slate-600 flex items-center justify-between group">
-                            <span className="group-hover:text-indigo-600 transition-colors">Promociones Seleccionadas</span>
-                            <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                        </a>
-                    </div>
-                </div>
+
             </main>
 
             <Footer />

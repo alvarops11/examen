@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Megaphone, ExternalLink, Zap, Target } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target } from "lucide-react";
 import { toast } from "sonner";
 import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
@@ -36,17 +36,7 @@ interface ExamData {
 
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
 
-const DIRECT_LINKS = [
-  "https://otieu.com/4/10375892",
-  "https://otieu.com/4/10375901",
-  "https://otieu.com/4/10375902",
-  "https://otieu.com/4/10375903"
-];
 
-const triggerAd = () => {
-  const randomLink = DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)];
-  window.open(randomLink, '_blank');
-};
 
 
 
@@ -153,14 +143,7 @@ export default function Home() {
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Redirigir a un Direct Link patrocinado (Monetización por Evento)
-      setTimeout(() => {
-        toast.info("Cargando contenido patrocinado...", {
-          icon: "🚀",
-          duration: 3000
-        });
-        triggerAd();
-      }, 800);
+
 
 
     } catch (error) {
@@ -210,8 +193,7 @@ export default function Home() {
       generateExamPDF(examen, curso, isCorregido);
       toast.success(`PDF ${isCorregido ? "corregido " : ""}descargado correctamente`);
 
-      // Forzar anuncio al descargar (Monetización por Evento)
-      setTimeout(triggerAd, 500);
+
 
 
     } catch (error) {
@@ -261,37 +243,7 @@ export default function Home() {
                   Sube tus apuntes, elige el nivel y crea tu examen con IA al instante.
                 </p>
 
-                {/* Direct Link Ad Placement - Profesional */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="mt-6 flex flex-col items-center gap-2"
-                >
-                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest">
-                    Oferta Seleccionada
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-3">
-                    <a
-                      href={DIRECT_LINKS[2]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:border-indigo-200"
-                    >
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
-                      Promoción AliExpress
-                    </a>
-                    <a
-                      href={DIRECT_LINKS[3]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-fuchsia-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-100 shadow-lg transition-all hover:border-fuchsia-200"
-                    >
-                      <Sparkles className="w-4 h-4 text-fuchsia-400" />
-                      Ofertas Destacadas
-                    </a>
-                  </div>
-                </motion.div>
+
               </div>
 
               <motion.div
@@ -626,34 +578,7 @@ export default function Home() {
                 )}
               </motion.div>
 
-              {/* Post-Exam Ad - Profesional (Debajo de botón nuevo examen) */}
-              {corregido && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 mb-12 bg-slate-900 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl border border-slate-800"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/10 rounded-xl">
-                      <Sparkles className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Anuncio Patrocinado</div>
-                      <h4 className="font-bold text-lg text-white">Promociones destacadas en AliExpress</h4>
-                      <p className="text-slate-400 text-sm">Explora una selección exclusiva de productos con precios especiales.</p>
-                    </div>
-                  </div>
-                  <a
-                    href={DIRECT_LINKS[Math.floor(Math.random() * DIRECT_LINKS.length)]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shrink-0 flex items-center gap-2 shadow-lg"
-                  >
-                    Ver Oferta
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </motion.div>
-              )}
+
             </motion.div>
           )}
         </AnimatePresence>

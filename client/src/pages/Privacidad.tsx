@@ -90,9 +90,7 @@ export default function Privacidad() {
                                         política de privacidad de OpenRouter
                                     </a>.
                                 </li>
-                                <li className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mt-4">
-                                    <strong>Google AdSense:</strong> Utilizamos Google AdSense para mostrar anuncios. Google, como proveedor externo, utiliza cookies para mostrar anuncios en este sitio basados en las visitas previas de los usuarios. El uso de la cookie de publicidad de Google permite a Google y a sus socios mostrar anuncios basados en las visitas de los usuarios a este y otros sitios web en Internet.
-                                </li>
+
                             </ul>
                         </section>
 
@@ -143,14 +141,7 @@ export default function Privacidad() {
                             </p>
                         </section>
 
-                        <section>
-                            <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
-                                10. Gestión de Publicidad y Cookies de Terceros
-                            </h2>
-                            <p>
-                                Los usuarios pueden inhabilitar la publicidad personalizada. Para ello, pueden acceder a la <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">Configuración de anuncios de Google</a>. De forma alternativa, puedes informar a los usuarios de que pueden inhabilitar el uso de cookies de un tercero para la publicidad personalizada mediante la visita a <a href="https://www.aboutads.info/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">www.aboutads.info</a>.
-                            </p>
-                        </section>
+
 
                         <section>
                             <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">

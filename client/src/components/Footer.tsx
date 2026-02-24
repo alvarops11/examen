@@ -43,19 +43,11 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Promoted */}
-                    <div>
-                        <h4 className="text-slate-900 font-bold mb-4 text-sm uppercase tracking-wider text-indigo-600">Patrocinado</h4>
-                        <ul className="space-y-3 text-sm">
-                            <li><a href="https://otieu.com/4/10375892" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors font-semibold">Promociones AliExpress</a></li>
-                            <li><a href="https://otieu.com/4/10375903" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors font-semibold">Ofertas Seleccionadas</a></li>
-                        </ul>
-                    </div>
                 </div>
 
                 <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-slate-500">
-                        © {new Date().getFullYear()} ExamSphere. Herramienta avanzada para la optimización del estudio.
+                        © {new Date().getFullYear()} ExamSphere. Herramienta educativa sin ánimo de lucro.
                     </p>
                     <p className="text-sm text-slate-400">
                         Potenciado por Inteligencia Artificial para el éxito académico.

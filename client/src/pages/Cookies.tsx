@@ -74,23 +74,7 @@ export default function Cookies() {
                             </div>
                         </section>
 
-                        <section>
-                            <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
-                                4. Cookies de Terceros (Google AdSense)
-                            </h2>
-                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
-                                <p className="font-semibold text-indigo-900 mb-3">
-                                    📢 Uso de Google AdSense:
-                                </p>
-                                <p className="text-slate-700 mb-4">
-                                    Google, como proveedor asociado, utiliza cookies para publicar anuncios en ExamSphere. El uso de la cookie DART permite a Google mostrar anuncios a los usuarios en función de su visita a este sitio y a otros sitios de Internet.
-                                </p>
-                                <ul className="list-disc pl-6 space-y-2 text-slate-800">
-                                    <li><strong>Cookies de publicidad:</strong> Utilizadas por Google y sus socios para mostrar anuncios basados en intereses.</li>
-                                    <li><strong>Control de usuario:</strong> Puedes inhabilitar el uso de la cookie de DART visitando la <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Política de privacidad de la red de contenido y de los anuncios de Google</a>.</li>
-                                </ul>
-                            </div>
-                        </section>
+
 
                         <section>
                             <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
