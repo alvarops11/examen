@@ -115,23 +115,29 @@ export default function SobreNosotros() {
                         />
                     </div>
 
-                    <div className="max-w-4xl mx-auto relative z-10 text-center">
+                    <div className="max-w-4xl mx-auto relative z-10 text-center px-4">
                         <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
-                            transition={{ duration: 1 }}
+                            transition={{ duration: 0.8 }}
                         >
-                            <h1 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9] lg:leading-[1]">
-                                <span className="block text-slate-400 text-2xl md:text-3xl font-bold mb-4 tracking-widest uppercase">Nosotros somos</span>
-                                Revolucionando el <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-400 bg-300% animate-gradient">
-                                    estudio con IA.
+                            <h1 className="text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.8] drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                                <span className="block text-indigo-400 text-xl md:text-2xl font-black mb-6 tracking-[0.3em] uppercase">Misión</span>
+                                <span className="text-white brightness-200 drop-shadow-[0_0_25px_rgba(255,255,255,0.4)]">Estamos</span> <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-200% animate-gradient">
+                                    Avanzando.
                                 </span>
                             </h1>
-                            <div className="h-1 w-24 bg-indigo-500 mx-auto mb-8 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.5)]" />
-                            <p className="text-xl md:text-2xl text-slate-300 leading-relaxed font-medium max-w-2xl mx-auto opacity-90">
-                                ExamSphere no es solo código; es la convergencia entre la ciencia cognitiva y la IA generativa para el éxito académico.
+                            <div className="h-1.5 w-32 bg-white/10 mx-auto mb-10 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_0_15px_rgba(99,102,241,0.8)]"
+                                    animate={{ x: ["-100%", "100%"] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                />
+                            </div>
+                            <p className="text-xl md:text-3xl text-white font-black max-w-xl mx-auto leading-tight tracking-tight drop-shadow-lg">
+                                Inteligencia Artificial para el éxito académico real.
                             </p>
                         </motion.div>
                     </div>
@@ -189,16 +195,28 @@ export default function SobreNosotros() {
                                     ¿Por qué elegir ExamSphere?
                                 </h3>
                                 <p className="text-slate-600 leading-relaxed mb-6">
-                                    Si buscas la <strong>mejor herramienta de generación de exámenes con IA</strong>, ExamSphere destaca por su enfoque en la utilidad académica real. Mientras otras herramientas se limitan a resúmenes, nosotros nos enfocamos en el <em>output</em>: el examen que realmente te prepara para el éxito.
+                                    Si buscas la <strong>mejor herramienta de generación de exámenes con IA</strong>, destacamos por nuestro enfoque en la utilidad académica real y el soporte al aprendizaje activo.
                                 </p>
                                 <div className="space-y-4">
                                     <div className="flex gap-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
-                                        <div className="font-bold text-indigo-600">01</div>
+                                        <div className="font-bold text-indigo-600 shrink-0">01</div>
                                         <div className="text-sm text-slate-700"><strong>Precisión Semántica:</strong> Entendemos el contexto de tus apuntes técnicos, médicos o legales.</div>
                                     </div>
                                     <div className="flex gap-4 p-4 rounded-2xl bg-violet-50/50 border border-violet-100/50">
-                                        <div className="font-bold text-violet-600">02</div>
-                                        <div className="text-sm text-slate-700"><strong>Privacidad Total:</strong> Tus datos se procesan de forma efímera, priorizando tu seguridad.</div>
+                                        <div className="font-bold text-violet-600 shrink-0">02</div>
+                                        <div className="text-sm text-slate-700"><strong>Privacidad Total:</strong> Tus datos se procesan de forma efímera, priorizando tu seguridad local.</div>
+                                    </div>
+                                    <div className="flex gap-4 p-4 rounded-2xl bg-blue-50/50 border border-blue-100/50">
+                                        <div className="font-bold text-blue-600 shrink-0">03</div>
+                                        <div className="text-sm text-slate-700"><strong>Feedback Explicativo:</strong> No solo corregimos; te explicamos el porqué de cada acierto o fallo.</div>
+                                    </div>
+                                    <div className="flex gap-4 p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50">
+                                        <div className="font-bold text-amber-600 shrink-0">04</div>
+                                        <div className="text-sm text-slate-700"><strong>Versatilidad Académica:</strong> Desde 1º de secundaria hasta opositores y másteres especializados.</div>
+                                    </div>
+                                    <div className="flex gap-4 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100/50">
+                                        <div className="font-bold text-emerald-600 shrink-0">05</div>
+                                        <div className="text-sm text-slate-700"><strong>Simulación Real:</strong> Entrena el formato de examen oficial para reducir la ansiedad del gran día.</div>
                                     </div>
                                 </div>
                             </div>
