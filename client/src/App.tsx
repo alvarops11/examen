@@ -13,6 +13,12 @@ import HowToUse from "./pages/HowToUse";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import Estadisticas from "./pages/Estadisticas";
+import SobreNosotros from "./pages/SobreNosotros";
+import Blog from "./pages/Blog";
+import ArticuloTecnicas from "./pages/blog/ArticuloTecnicas";
+import ArticuloIAEducacion from "./pages/blog/ArticuloIAEducacion";
+import ArticuloOposiciones from "./pages/blog/ArticuloOposiciones";
+import ArticuloAnsiedad from "./pages/blog/ArticuloAnsiedad";
 
 /**
  * ExamSphere - Generador de Exámenes con IA
@@ -34,6 +40,12 @@ function Router() {
         <Route path={"/privacidad"} component={Privacidad} />
         <Route path={"/cookies"} component={Cookies} />
         <Route path={"/estadisticas"} component={Estadisticas} />
+        <Route path={"/sobre-nosotros"} component={SobreNosotros} />
+        <Route path={"/blog"} component={Blog} />
+        <Route path={"/blog/tecnicas-estudio"} component={ArticuloTecnicas} />
+        <Route path={"/blog/ia-educacion"} component={ArticuloIAEducacion} />
+        <Route path={"/blog/preparar-oposiciones-ia"} component={ArticuloOposiciones} />
+        <Route path={"/blog/reducir-ansiedad-examenes"} component={ArticuloAnsiedad} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

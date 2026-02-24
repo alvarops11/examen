@@ -78,7 +78,7 @@ export default function Privacidad() {
                                 5. Uso de Servicios de Terceros
                             </h2>
                             <p>
-                                ExamSphere se conecta únicamente con:
+                                ExamSphere se conecta con los siguientes servicios externos:
                             </p>
                             <ul className="list-disc pl-6 space-y-2">
                                 <li>
@@ -88,8 +88,10 @@ export default function Privacidad() {
                                     <strong>OpenRouter API:</strong> Servicio que proporciona acceso a modelos de IA. Cuando generas un examen, tu temario se envía a nuestro Cloudflare Worker, que luego lo procesa con OpenRouter. Consulta la{" "}
                                     <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                                         política de privacidad de OpenRouter
-                                    </a>
-                                    .
+                                    </a>.
+                                </li>
+                                <li className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mt-4">
+                                    <strong>Google AdSense:</strong> Utilizamos Google AdSense para mostrar anuncios. Google, como proveedor externo, utiliza cookies para mostrar anuncios en este sitio basados en las visitas previas de los usuarios. El uso de la cookie de publicidad de Google permite a Google y a sus socios mostrar anuncios basados en las visitas de los usuarios a este y otros sitios web en Internet.
                                 </li>
                             </ul>
                         </section>
@@ -143,7 +145,16 @@ export default function Privacidad() {
 
                         <section>
                             <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
-                                10. Contacto
+                                10. Gestión de Publicidad y Cookies de Terceros
+                            </h2>
+                            <p>
+                                Los usuarios pueden inhabilitar la publicidad personalizada. Para ello, pueden acceder a la <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">Configuración de anuncios de Google</a>. De forma alternativa, puedes informar a los usuarios de que pueden inhabilitar el uso de cookies de un tercero para la publicidad personalizada mediante la visita a <a href="https://www.aboutads.info/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">www.aboutads.info</a>.
+                            </p>
+                        </section>
+
+                        <section>
+                            <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
+                                11. Contacto
                             </h2>
                             <p>
                                 Para cualquier duda sobre privacidad, puedes contactar con nosotros a través de nuestro correo electrónico oficial: <a href={getMailLink("soporteexamsphere@gmail.com")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">soporteexamsphere@gmail.com</a>
@@ -151,7 +162,7 @@ export default function Privacidad() {
                         </section>
 
                         <p className="text-sm text-slate-500 mt-12 pt-8 border-t border-slate-200">
-                            Última actualización: Diciembre 2024
+                            Última actualización: Febrero 2026
                         </p>
                     </div>
                 </div>

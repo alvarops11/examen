@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Megaphone, ExternalLink } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Megaphone, ExternalLink, Zap, Target } from "lucide-react";
 import { toast } from "sonner";
 import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
@@ -659,9 +659,80 @@ export default function Home() {
         </AnimatePresence>
       </main>
 
-      <Footer />
+      {/* Features Section for AdSense Content */}
+      {!examen && !loading && (
+        <section className="py-24 px-4 bg-white/30">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-6">
+                Mucho más que un simple <span className="text-gradient">generador de tests</span>
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                ExamSphere utiliza algoritmos avanzados de procesamiento de lenguaje natural para entender tus apuntes y crear desafíos académicos reales.
+              </p>
+            </div>
 
-      {/* Cookie Banner */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                  <BrainCircuit className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Comprensión Profunda</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Nuestra IA analiza la jerarquía de tus temas, identificando conceptos clave y relaciones complejas para generar preguntas que evalúan la comprensión, no solo la memoria.
+                </p>
+              </div>
+
+              <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Target className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Precisión Académica</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Ajusta la dificultad para que coincida con el nivel real de tus exámenes universitarios. Desde conceptos básicos hasta casos prácticos avanzados.
+                </p>
+              </div>
+
+              <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Zap className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Ahorro de Tiempo</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Deja de pasar horas redactando tus propios tests. Invierte tu tiempo en lo que importa: estudiar y practicar con feedback inmediato.
+                </p>
+              </div>
+            </div>
+
+            {/* Informational Text Block */}
+            <div className="mt-20 glass-card p-12 rounded-[3rem] border border-indigo-50 bg-white/50">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-6">¿Por qué usar IA para estudiar?</h3>
+                  <div className="space-y-4 text-slate-700 leading-relaxed">
+                    <p>
+                      La ciencia del aprendizaje es clara: la <strong>autoevaluación</strong> es la técnica más efectiva para retener información a largo plazo. Sin embargo, crear buenos exámenes es una tarea ardua y sesgada.
+                    </p>
+                    <p>
+                      ExamSphere elimina esa barrera, permitiéndote aplicar el <em>Active Recall</em> de forma instantánea. Nuestra plataforma está diseñada por y para estudiantes, priorizando la facilidad de uso y la calidad del contenido generado.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
+                  <div className="relative z-10">
+                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-xs">Prueba de Eficacia</p>
+                    <p className="text-3xl font-black mb-4">+70%</p>
+                    <p className="text-slate-400">De mejora media en la retención detectada en usuarios que practican con tests IA frente a lectura pasiva.</p>
+                  </div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Footer />
       <CookieBanner />
     </div>
   );

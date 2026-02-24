@@ -25,6 +25,8 @@ export default function Footer() {
                         <h4 className="text-slate-900 font-bold mb-4 text-sm uppercase tracking-wider">Explorar</h4>
                         <ul className="space-y-3 text-sm">
                             <li><Link href="/" className="text-slate-600 hover:text-indigo-600 transition-colors">Inicio</Link></li>
+                            <li><Link href="/blog" className="text-slate-600 hover:text-indigo-600 transition-colors">Blog Académico</Link></li>
+                            <li><Link href="/sobre-nosotros" className="text-slate-600 hover:text-indigo-600 transition-colors">Sobre Nosotros</Link></li>
                             <li><Link href="/como-usar" className="text-slate-600 hover:text-indigo-600 transition-colors">Cómo Usar</Link></li>
                             <li><Link href="/faq" className="text-slate-600 hover:text-indigo-600 transition-colors">Preguntas Frecuentes</Link></li>
                             <li><Link href="/contacto" className="text-slate-600 hover:text-indigo-600 transition-colors">Contacto</Link></li>
@@ -53,7 +55,7 @@ export default function Footer() {
 
                 <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-sm text-slate-500">
-                        © {new Date().getFullYear()} ExamSphere. Herramienta educativa sin ánimo de lucro.
+                        © {new Date().getFullYear()} ExamSphere. Herramienta avanzada para la optimización del estudio.
                     </p>
                     <p className="text-sm text-slate-400">
                         Potenciado por Inteligencia Artificial para el éxito académico.

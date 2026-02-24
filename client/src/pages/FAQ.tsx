@@ -18,7 +18,7 @@ export default function FAQ() {
         },
         {
             question: "¿Es gratuita la plataforma?",
-            answer: "Sí, ExamSphere es actualmente una herramienta gratuita sin ánimo de lucro diseñada para ayudar a estudiantes de todos los niveles a preparar sus exámenes de manera más eficiente."
+            answer: "Sí, ExamSphere es una herramienta de acceso gratuito para los estudiantes. Para mantener la infraestructura y seguir innovando sin coste para el usuario, el proyecto se financia a través de publicidad relevante y enlaces de afiliados."
         },
         {
             question: "¿Qué IA utiliza para generar las preguntas?",

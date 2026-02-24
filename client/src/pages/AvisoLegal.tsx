@@ -32,7 +32,7 @@ export default function AvisoLegal() {
                                 <li><strong>Denominación:</strong> ExamSphere</li>
                                 <li><strong>Dominio:</strong> https://examsphere.me/</li>
                                 <li><strong>Actividad:</strong> Plataforma educativa de generación de exámenes mediante inteligencia artificial</li>
-                                <li><strong>Finalidad:</strong> Herramienta académica sin ánimo de lucro para estudiantes</li>
+                                <li><strong>Finalidad:</strong> Herramienta académica para la mejora del aprendizaje y el rendimiento estudiantil, financiada mediante publicidad.</li>
                                 <li><strong>Contacto:</strong> <a href={getMailLink("soporteexamsphere@gmail.com")} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">soporteexamsphere@gmail.com</a></li>
                             </ul>
                         </section>

@@ -15,6 +15,8 @@ export default function Header({ showExit, onExit }: HeaderProps) {
 
     const navLinks = [
         { href: "/", label: "Inicio" },
+        { href: "/blog", label: "Blog" },
+        { href: "/sobre-nosotros", label: "Sobre Nosotros" },
         { href: "/como-usar", label: "Cómo Usar" },
         { href: "/faq", label: "FAQ" },
         { href: "/contacto", label: "Contacto" },
