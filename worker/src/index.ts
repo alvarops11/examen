@@ -214,16 +214,17 @@ export default {
         });
       }
 
-      const model = "xiaomi/mimo-v2-flash:free";
+      const model = "google/gemini-2.0-flash-lite-preview-02-05:free";
       const dificultadMap: Record<string, string> = {
         facil: "básicos y conceptos fundamentales",
         media: "comprensión, aplicación y análisis de conceptos",
         dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
       };
 
-      // OPTIMIZACIÓN: Reducción de MaxChunkSize para mayor paralelismo (de 8000 a 3000)
+      // OPTIMIZACIÓN: Reducción de MaxChunkSize para mayor paralelismo
       const chunks = splitText(temario, 3000);
       let allQuestions: ExamQuestion[] = [];
+      let lastError = "";
 
       const totalChunks = chunks.length;
       const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
@@ -298,14 +299,12 @@ ${chunkContent}
 
 RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
 
-        // Retries for robustness
         let attempts = 0;
         let success = false;
         let chunkQuestions: ExamQuestion[] = [];
 
         while (attempts < 3 && !success) {
           try {
-            // Add slight jittered delay to avoid hitting rate limits exactly at the same time
             if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
             const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
@@ -327,8 +326,13 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
 
             if (!response.ok) {
               const errText = await response.text();
-              console.error(`OpenRouter error chunk ${i}: ${response.status} - ${errText}`);
-              throw new Error(`OpenRouter API error: ${response.status}`);
+              let errorMsg = `OpenRouter error: ${response.status}`;
+              try {
+                const errJson = JSON.parse(errText);
+                errorMsg = errJson.error?.message || errJson.error || errorMsg;
+              } catch (e) { }
+              lastError = errorMsg;
+              throw new Error(errorMsg);
             }
 
             const data: any = await response.json();
@@ -367,10 +371,12 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
               });
               success = true;
             } else {
+              lastError = "Invalid JSON structure from AI";
               throw new Error("Invalid JSON structure");
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error(`Attempt ${attempts + 1} failed for chunk ${i}:`, e);
+            lastError = e.message || lastError;
             attempts++;
           }
         }
@@ -381,7 +387,7 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
       allQuestions = results.flat();
 
       if (allQuestions.length === 0) {
-        return new Response(JSON.stringify({ error: "No se pudieron generar preguntas." }), {
+        return new Response(JSON.stringify({ error: `IA Error: ${lastError || "No se pudieron generar preguntas."}` }), {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders() },
         });
