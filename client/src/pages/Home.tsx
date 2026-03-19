@@ -487,7 +487,7 @@ export default function Home() {
                             return (
                               <label
                                 key={cIndex}
-                                className={`relative flex items-center p-4 rounded-xl cursor-pointer border-2 transition-all duration-200 group
+                                className={`relative flex items-start p-4 rounded-xl cursor-pointer border-2 transition-all duration-200 group
                                     ${isSelected
                                     ? "border-indigo-500 bg-indigo-50/50"
                                     : "border-transparent bg-slate-50 hover:bg-slate-100"}
@@ -503,21 +503,19 @@ export default function Home() {
                                   disabled={corregido}
                                   className="hidden"
                                 />
-                                {/* Custom Checkbox UI */}
-                                <div className={`w-5 h-5 rounded-full border-2 mr-4 flex items-center justify-center transition-colors
-                                    ${isSelected ? "border-indigo-500" : "border-slate-300 group-hover:border-indigo-300"}
-                                    ${isCorrect ? "!border-green-500" : ""}
-                                    ${isWrongAttempt ? "!border-red-500" : ""}
+                                {/* Letter badge A/B/C/D */}
+                                <div className={`flex-shrink-0 w-7 h-7 rounded-lg text-xs font-black mr-4 flex items-center justify-center transition-all
+                                    ${isCorrect ? "bg-green-500 text-white" : isWrongAttempt ? "bg-red-500 text-white" : isSelected ? "bg-indigo-500 text-white" : "bg-slate-200 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600"}
                                   `}>
-                                  {isSelected && <div className={`w-2.5 h-2.5 rounded-full ${isCorrect ? "bg-green-500" : isWrongAttempt ? "bg-red-500" : "bg-indigo-500"}`} />}
+                                  {String.fromCharCode(65 + cIndex)}
                                 </div>
 
-                                <span className={`text-sm font-medium ${isSelected ? "text-indigo-900" : "text-slate-600"}`}>
+                                <span className={`text-sm font-medium leading-relaxed pt-0.5 flex-1 ${isSelected && !isCorrect && !isWrongAttempt ? "text-indigo-900" : isCorrect ? "text-green-800" : isWrongAttempt ? "text-red-800" : "text-slate-600"}`}>
                                   {choice}
                                 </span>
 
                                 {corregido && (isCorrect || isWrongAttempt) && (
-                                  <div className="ml-auto">
+                                  <div className="ml-3 flex-shrink-0 pt-0.5">
                                     {isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
                                   </div>
                                 )}

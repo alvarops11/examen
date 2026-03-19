@@ -240,6 +240,10 @@ Comportamiento general:
 - Actúa como un docente universitario con experiencia en evaluación rigurosa.
 - Evalúa solo con base en el contenido proporcionado. No completes lagunas, no infieras, no añadas ejemplos no presentes.
 
+IDIOMA (REGLA ABSOLUTA):
+- TODO el contenido generado debe estar en ESPAÑOL: enunciados, opciones, explicaciones y cualquier texto. Sin excepciones.
+- Está TERMINANTEMENTE PROHIBIDO usar palabras, frases, términos técnicos en inglés o cualquier otro idioma, aunque el temario contenga fragmentos en otro idioma. Si el concepto tiene nombre en inglés, tradúcelo o usa la denominación académica en español.
+
 Uso del temario (REGLA DE ORO):
 - Usa EXCLUSIVAMENTE la información contenida en el fragmento de temario proporcionado.
 - Todas las preguntas, opciones y explicaciones deben ser trazables directamente al texto.
@@ -260,6 +264,12 @@ Redacción del enunciado:
 - EJEMPLO PROHIBIDO (Meta-lenguaje): "¿Cuál es la característica principal... según el fragmento?"
 - EJEMPLO CORRECTO: "¿Cuál es la característica principal que define el inicio del Neolítico?" (eliminando cualquier rastro de la fuente).
 
+PROHIBICIÓN DE PREGUNTAS DEFINICIONALES TRAMPA (REGLA CRÍTICA):
+- Está TERMINANTEMENTE PROHIBIDO el patrón: "¿Cómo se denomina el concepto que [descripción exhaustiva que solo encaja con la respuesta]?". Este tipo de enunciado convierte la pregunta en trivial porque el alumno identifica la respuesta única por descarte.
+- EJEMPLO PROHIBIDO: "¿Cómo se llama el proceso por el cual las células absorben glucosa mediante transportadores GLUT, requiere insulina y es saturable?"
+- La forma correcta es evaluar desde el concepto hacia sus características, NO al revés. Pregunta qué hace, cómo funciona, cuál es la consecuencia o en qué se diferencia.
+- EJEMPLO CORRECTO: "¿Qué característica define la captación de glucosa mediada por transportadores GLUT en células musculares?"
+
 Reglas críticas anti-sesgo de longitud (PROHIBICIÓN DE PATRONES):
 - La opción correcta NO debe ser nunca la más larga por sistema. Es una señal de IA débil.
 - REFUERZA LA DIFICULTAD: En muchas preguntas, haz que la opción correcta sea significativamente más CORTA y directa que los distractores.
@@ -278,6 +288,11 @@ Explicación:
 - No se deben explicar los distractores.
 - No se debe introducir información nueva.
 
+Variedad obligatoria (REGLA CRÍTICA):
+- Cada examen que generes debe ser ÚNICO e IRREPETIBLE. Varía los conceptos evaluados, el ángulo de análisis, el estilo de enunciado y los distractores en cada ejecución.
+- NUNCA generes las mismas preguntas ni enunciados similares a los de generaciones anteriores del mismo temario.
+- Explora distintas partes del fragmento en cada llamada, priorizando aspectos que no hayas cubierto aún.
+
 Formato de salida:
 - La salida debe ser un objeto JSON válido, sin ningún texto adicional, con la siguiente estructura exacta:
 {
@@ -292,12 +307,13 @@ Formato de salida:
   ]
 }`;
 
-        const userPrompt = `Genera ${questionsForThisChunk} preguntas para el curso ${curso} nivel ${dificultadMap[dificultad] || "medio"}.
+        const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+        const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas COMPLETAMENTE NUEVAS Y DIFERENTES para el curso ${curso} nivel ${dificultadMap[dificultad] || "medio"}. Asegúrate de que sean distintas a cualquier examen previo.
     
 FRAGMENTO DE TEMARIO (${i + 1}/${totalChunks}):
 ${chunkContent}
 
-RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
+RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions". Las preguntas deben ser únicas e irrepetibles.`;
 
         let attempts = 0;
         let success = false;
@@ -320,7 +336,7 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions".`;
                   { role: "system", content: systemPrompt },
                   { role: "user", content: userPrompt }
                 ],
-                temperature: 0.7,
+                temperature: 0.95,
               })
             }, env);
 
