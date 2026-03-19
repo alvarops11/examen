@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target } from "lucide-react";
@@ -175,6 +176,25 @@ export default function Home() {
     setCalificacion({ aciertos, blancas, total: examen.questions.length, porcentaje });
     setCorregido(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (porcentaje >= 50) {
+      // Confetti celebration — dos ráfagas laterales
+      const fire = (particleRatio: number, opts: confetti.Options) => {
+        confetti({
+          origin: { y: 0.6 },
+          zIndex: 9999,
+          ...opts,
+          particleCount: Math.floor(200 * particleRatio),
+        });
+      };
+      setTimeout(() => {
+        fire(0.25, { spread: 26, startVelocity: 55, colors: ['#6366f1', '#8b5cf6', '#a78bfa'] });
+        fire(0.2,  { spread: 60, colors: ['#6366f1', '#c4b5fd', '#ffffff'] });
+        fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#818cf8', '#7c3aed', '#ddd6fe'] });
+        fire(0.1,  { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2, colors: ['#a5f3fc', '#6366f1'] });
+        fire(0.1,  { spread: 120, startVelocity: 45, colors: ['#ffffff', '#c7d2fe'] });
+      }, 300);
+    }
   };
 
   // Nuevo examen
@@ -378,6 +398,33 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="space-y-8"
             >
+              {/* Vertical Fixed Progress Bar (right side) */}
+              {!corregido && (() => {
+                const respondidas = respuestas.filter(r => r !== null).length;
+                const total = examen.questions.length;
+                const pct = Math.round((respondidas / total) * 100);
+                const barColor = pct === 100 ? 'from-green-400 to-emerald-500' : pct >= 50 ? 'from-indigo-500 to-violet-500' : 'from-indigo-400 to-indigo-500';
+                const textColor = pct === 100 ? 'text-green-600' : 'text-indigo-600';
+                return (
+                  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2">
+                    {/* Percentage label */}
+                    <span className={`text-xs font-black ${textColor}`}>{pct}%</span>
+                    {/* Vertical track */}
+                    <div className="w-2 h-48 bg-slate-100 rounded-full overflow-hidden flex flex-col-reverse shadow-inner">
+                      <motion.div
+                        className={`w-full rounded-full bg-gradient-to-t ${barColor}`}
+                        initial={{ height: '0%' }}
+                        animate={{ height: `${pct}%` }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                      />
+                    </div>
+                    {/* Count label */}
+                    <span className="text-xs font-bold text-slate-400 leading-tight text-center">
+                      <span className={textColor}>{respondidas}</span>/{total}
+                    </span>
+                  </div>
+                );
+              })()}
               {/* Exam Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
