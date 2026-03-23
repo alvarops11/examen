@@ -79,7 +79,8 @@ export async function generateExamWithOpenRouter(
   dificultad: string,
   numeroPreguntas: number,
   numeroRespuestas: number,
-  temario: string
+  temario: string,
+  onProgress?: (message: string) => void
 ): Promise<ExamResponse> {
 
   const WORKER_URL = getBaseUrl() + "/api/generate";
@@ -96,7 +97,6 @@ export async function generateExamWithOpenRouter(
       throw new Error(errorData.error || `Error del servidor: ${response.status}`);
     }
 
-    // Leemos el stream SSE
     const reader = response.body?.getReader();
     if (!reader) throw new Error("No se pudo inicializar el lector de flujo.");
 
@@ -104,40 +104,53 @@ export async function generateExamWithOpenRouter(
     let partialLine = "";
     let finalData: ExamResponse | null = null;
 
-    console.log("%c--- INICIO DE GENERACIÓN IA ---", "color: #6366f1; font-weight: bold; font-size: 12px;");
-
     while (true) {
       const { value, done } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
+      
+      const chunk = decoder.decode(value || new Uint8Array(), { stream: !done });
       const lines = (partialLine + chunk).split("\n");
       partialLine = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        if (trimmedLine.startsWith("data: ")) {
           try {
-            const jsonStr = line.replace("data: ", "");
+            const jsonStr = trimmedLine.replace("data: ", "");
             const event = JSON.parse(jsonStr);
 
             if (event.type === "log") {
+              if (onProgress) onProgress(event.message);
               console.log(`%c[IA Log] %c${event.message}`, "color: #8b5cf6; font-weight: bold;", "color: #4b5563;");
             } else if (event.type === "error") {
               console.error(`%c[IA Error] %c${event.message}`, "color: #ef4444; font-weight: bold;", "color: #ef4444;");
               throw new Error(event.message);
             } else if (event.type === "result") {
               finalData = event.data;
+              console.log("%c[IA Success] %cExamen generado completamente", "color: #10b981; font-weight: bold;", "color: #10b981;");
             }
           } catch (e) {
-            console.error("Error al parsear evento SSE:", e);
+            console.error("Error al parsear evento SSE:", e, "Line content:", trimmedLine);
           }
         }
+      }
+
+      if (done) break;
+    }
+
+    // Procesar cualquier dato restante en partialLine
+    if (partialLine.trim().startsWith("data: ")) {
+      try {
+        const jsonStr = partialLine.trim().replace("data: ", "");
+        const event = JSON.parse(jsonStr);
+        if (event.type === "result") finalData = event.data;
+      } catch (e) {
+        console.error("Error al parsear línea final SSE:", e);
       }
     }
 
     if (!finalData) throw new Error("No se recibió el resultado final del examen.");
-    
-    console.log("%c--- GENERACIÓN COMPLETADA ---", "color: #10b981; font-weight: bold; font-size: 12px;");
     return finalData;
 
   } catch (error) {

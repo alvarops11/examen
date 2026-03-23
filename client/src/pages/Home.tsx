@@ -37,6 +37,15 @@ interface ExamData {
 
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
 
+const STUDY_FACTS = [
+  "¿Sabías que dormir después de estudiar ayuda a consolidar la memoria?",
+  "La técnica Pomodoro (25 min estudio, 5 min descanso) mejora la productividad.",
+  "Enseñar lo aprendido a otra persona es una de las mejores formas de estudiar.",
+  "Mantenerte hidratado ayuda a tu cerebro a procesar la información más rápido.",
+  "Escribir a mano tus apuntes ayuda a recordar mejor que teclear.",
+  "Hacerte auto-exámenes como este reduce la ansiedad ante el examen real."
+];
+
 
 
 
@@ -61,9 +70,34 @@ export default function Home() {
     porcentaje: number;
   } | null>(null);
 
+  const [progressMessage, setProgressMessage] = useState("Iniciando conexión...");
+  const [currentFactIndex, setCurrentFactIndex] = useState(0);
+
+  // Juego de espera: Reacción
+  const [score, setScore] = useState(0);
+  const [targetPos, setTargetPos] = useState({ top: '50%', left: '50%' });
+
+  const moveTarget = () => {
+    const top = Math.floor(Math.random() * 70) + 15 + '%';
+    const left = Math.floor(Math.random() * 70) + 15 + '%';
+    setTargetPos({ top, left });
+    setScore((s: number) => s + 1);
+  };
+
   useEffect(() => {
     trackVisit();
   }, []);
+
+  // Rotar datos curiosos mientras carga
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      interval = setInterval(() => {
+        setCurrentFactIndex((prev: number) => (prev + 1) % STUDY_FACTS.length);
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,8 +169,16 @@ export default function Home() {
     if (!temario.trim()) return toast.error("Por favor, ingresa el temario");
 
     setLoading(true);
+    setProgressMessage("Iniciando conexión segura...");
     try {
-      const data = await generateExamWithOpenRouter(curso, dificultad, numeroPreguntas, numeroRespuestas, temario);
+      const data = await generateExamWithOpenRouter(
+        curso, 
+        dificultad, 
+        numeroPreguntas, 
+        numeroRespuestas, 
+        temario,
+        (msg) => setProgressMessage(msg)
+      );
       setExamen(data);
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);
@@ -238,7 +280,92 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-12 flex-grow">
         <AnimatePresence mode="wait">
-          {!examen ? (
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="flex flex-col items-center justify-center min-h-[60vh] text-center"
+            >
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
+                <div className="relative glass-card p-12 rounded-[3rem] border-indigo-100/50 shadow-2xl max-w-2xl w-full">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative">
+                      <Loader2 className="w-16 h-16 text-indigo-600 animate-spin" />
+                      <Sparkles className="absolute -top-1 -right-1 w-6 h-6 text-fuchsia-500 animate-bounce" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h2 className="text-3xl font-bold text-slate-900">Generando tu Examen</h2>
+                      <p className="text-slate-500 font-medium">Esto tardará solo un momento. Aprovecha para repasar...</p>
+                    </div>
+
+                    {/* Progress Bar Simulated */}
+                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200 shadow-inner">
+                      <motion.div 
+                        className="bg-gradient-to-r from-indigo-600 to-fuchsia-500 h-full"
+                        initial={{ width: "0%" }}
+                        animate={{ width: "95%" }}
+                        transition={{ duration: 45, ease: "linear" }}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-indigo-700 font-semibold bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+                      <Zap className="w-4 h-4 animate-pulse" />
+                      <span className="text-sm uppercase tracking-wider">{progressMessage}</span>
+                    </div>
+
+                    {/* Fun/Study Facts Carousel */}
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentFactIndex}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="min-h-[80px] flex items-center justify-center"
+                      >
+                        <p className="text-slate-600 italic text-lg px-8">
+                          "{STUDY_FACTS[currentFactIndex]}"
+                        </p>
+                      </motion.div>
+                    </AnimatePresence>
+
+                    <div className="w-full border-t border-slate-100 my-4" />
+
+                    {/* Mini Game: Reaction */}
+                    <div className="w-full space-y-4">
+                      <div className="flex justify-between items-center px-4">
+                        <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Mini-Juego de Reacción</span>
+                        <div className="bg-slate-900 text-white px-3 py-1 rounded-lg font-mono flex items-center gap-2">
+                          <Target className="w-4 h-4 text-fuchsia-400" />
+                          Puntos: {score}
+                        </div>
+                      </div>
+                      
+                      <div className="relative h-48 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden cursor-crosshair group">
+                        <motion.button
+                          onClick={moveTarget}
+                          style={{ top: targetPos.top, left: targetPos.left }}
+                          className="absolute w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Zap className="w-6 h-6" />
+                        </motion.button>
+                        {score === 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-300 font-bold uppercase tracking-tighter opacity-50 group-hover:opacity-100 transition-opacity">
+                            ¡Haz clic en el rayo!
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : !examen ? (
             <motion.div
               key="form"
               initial={{ opacity: 0, y: 20 }}
@@ -283,7 +410,7 @@ export default function Home() {
                       <div className="relative">
                         <select
                           value={curso}
-                          onChange={(e) => setCurso(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCurso(e.target.value)}
                           className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
                         >
                           {CURSOS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -297,7 +424,7 @@ export default function Home() {
                       <div className="relative">
                         <select
                           value={dificultad}
-                          onChange={(e) => setDificultad(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDificultad(e.target.value)}
                           className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
                         >
                           <option value="facil">Básica</option>

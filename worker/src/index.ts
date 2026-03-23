@@ -104,17 +104,10 @@ async function fetchWithFailover(
     console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${keys.length}...`);
 
     try {
-      // Implementamos un timeout de 60 segundos
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-
       const response = await fetch(url, {
         ...options,
         headers,
-        signal: controller.signal
       });
-
-      clearTimeout(timeoutId);
 
       // Si es exitoso o es un error de cliente (400) que no sea auth/rate limit, retornamos
       if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
@@ -126,13 +119,8 @@ async function fetchWithFailover(
       lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
       if (response.status === 429) lastErrorMsg = "Rate limit (429)";
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.warn(`[Worker] Timeout (60s) alcanzado para modelo ${modelName} con Key ${i + 1}.`);
-        lastErrorMsg = "Timeout (60s)";
-      } else {
-        console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
-        lastErrorMsg = error.message || "Network Error";
-      }
+      console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
+      lastErrorMsg = error.message || "Network Error";
     }
   }
 
@@ -232,7 +220,9 @@ export default {
 
         try {
           if (!env.OPENROUTER_API_KEY) {
-            sendSSE({ type: "error", message: "Server misconfiguration: Missing API Key" });
+            const availableKeys = Object.keys(env).join(", ");
+            console.error(`[Worker] Missing API Key. Available env keys: ${availableKeys}`);
+            sendSSE({ type: "error", message: `Server misconfiguration: Missing API Key. (Available: ${availableKeys})` });
             controller.close();
             return;
           }
@@ -252,13 +242,14 @@ export default {
             dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
           };
 
-          sendSSE({ type: "log", message: `Iniciando generación: ${numeroPreguntas} preguntas, nivel ${dificultad}` });
+          sendSSE({ type: "log", message: `Preparando tu examen de nivel ${dificultad}...` });
 
-          const chunks = splitText(temario, 8000);
-          sendSSE({ type: "log", message: `Temario dividido en ${chunks.length} fragmentos.` });
+          // OPTIMIZACIÓN AGRESIVA (V7): Fragmentos más pequeños para más paralelismo
+          const chunks = splitText(temario, 5500);
+          sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
 
           let allQuestions: ExamQuestion[] = [];
-          
+
           const totalChunks = chunks.length;
           const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
           const remainder = numeroPreguntas % totalChunks;
@@ -267,8 +258,8 @@ export default {
             const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
             if (questionsForThisChunk <= 0) return [];
 
-            await wait(i * 500);
-            sendSSE({ type: "log", message: `Procesando fragmento ${i + 1}/${totalChunks}...` });
+            // Paralelismo total: eliminamos el retraso escalonado
+            sendSSE({ type: "log", message: `Extrayendo preguntas de la sección ${i + 1}...` });
 
             const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
 
@@ -303,7 +294,8 @@ export default {
 
 Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
 
-            const userPrompt = `Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
+            const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+            const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
 
 <fragmento_temario>
 ${chunkContent}
@@ -316,19 +308,20 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             let chunkQuestions: ExamQuestion[] = [];
             let chunkLastError = "";
 
-            while (attempts < 3 && !success) {
+            // ESTRATEGIA DE FALLOVER ROBUSTA (V5): Siguiendo la secuencia exacta del usuario
+            const models = [
+              "stepfun/step-3.5-flash:free",
+              "openrouter/free"
+            ];
+
+            while (attempts < models.length && !success) {
               try {
                 if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
-                const models = [
-                  "google/gemini-flash-1.5:free",
-                  "nvidia/nemotron-3-super-120b-a12b:free",
-                  "openrouter/free"
-                ];
-                const currentModel = models[Math.min(attempts, models.length - 1)];
+                const currentModel = models[attempts];
 
                 // LOG AL NAVEGADOR
-                sendSSE({ type: "log", message: `Fragmento ${i + 1}: Intento ${attempts + 1} con ${currentModel}...` });
+                sendSSE({ type: "log", message: `Refinando sección ${i + 1} para mayor calidad...` });
 
                 const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
                   method: "POST",
@@ -379,7 +372,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                     };
                   });
                   success = true;
-                  sendSSE({ type: "log", message: `Fragmento ${i + 1}: ¡Éxito!` });
+                  sendSSE({ type: "log", message: `Sección ${i + 1} lista.` });
                 } else {
                   throw new Error("Invalid JSON structure");
                 }
@@ -388,15 +381,18 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                 attempts++;
               }
             }
-            if (!success) sendSSE({ type: "log", message: `Fragmento ${i + 1}: Falló tras 3 intentos. ${chunkLastError}` });
+            if (!success) sendSSE({ type: "log", message: `Aviso: Dificultad en sección ${i + 1}, ajustando parámetros.` });
             return chunkQuestions;
           });
 
+          console.log(`[Worker] Esperando ${chunks.length} fragmentos...`);
           const results = await Promise.all(chunkPromises);
           allQuestions = results.flat();
+          console.log(`[Worker] Generación completada. Total preguntas: ${allQuestions.length}`);
 
           if (allQuestions.length === 0) {
-            sendSSE({ type: "error", message: "No se pudieron generar preguntas." });
+            console.error("[Worker] Error: No se generó ninguna pregunta.");
+            sendSSE({ type: "error", message: "No se pudieron generar preguntas. Intenta con un temario más extenso." });
           } else {
             const finalQuestions = allQuestions.map((q, index) => ({ ...q, id: index + 1 }));
             const responseData: ExamResponse = {
@@ -406,8 +402,9 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             };
 
             // Enviar resultado final
+            console.log("[Worker] Enviando resultado final al cliente...");
             sendSSE({ type: "result", data: responseData });
-            
+
             // Track metrics
             const duration = Date.now() - startTime;
             ctx.waitUntil((async () => {
