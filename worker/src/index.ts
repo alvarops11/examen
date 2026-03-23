@@ -220,49 +220,57 @@ export default {
       return new Response("Method not allowed", { status: 405, headers: corsHeaders() });
     }
 
-    try {
-      const startTime = Date.now();
-      if (!env.OPENROUTER_API_KEY) {
-        return new Response(JSON.stringify({ error: "Server misconfiguration: Missing API Key" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
-        });
-      }
+    const startTime = Date.now();
+    const encoder = new TextEncoder();
 
-      const body = await request.json() as GenerateRequest;
-      const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario } = body;
+    // Creamos la respuesta en streaming (SSE)
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendSSE = (data: any) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        };
 
-      if (!temario || !temario.trim()) {
-        return new Response(JSON.stringify({ error: "Temario requerido" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
-        });
-      }
+        try {
+          if (!env.OPENROUTER_API_KEY) {
+            sendSSE({ type: "error", message: "Server misconfiguration: Missing API Key" });
+            controller.close();
+            return;
+          }
 
-      const model = "openrouter/free";
-      const dificultadMap: Record<string, string> = {
-        facil: "básicos y conceptos fundamentales",
-        media: "comprensión, aplicación y análisis de conceptos",
-        dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
-      };
+          const body = await request.json() as GenerateRequest;
+          const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario } = body;
 
-      // OPTIMIZACIÓN: Reducción a 8000 para mayor foco y velocidad por fragmento
-      const chunks = splitText(temario, 8000);
-      let allQuestions: ExamQuestion[] = [];
-      let lastError = "";
+          if (!temario || !temario.trim()) {
+            sendSSE({ type: "error", message: "Temario requerido" });
+            controller.close();
+            return;
+          }
 
-      const totalChunks = chunks.length;
-      const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
-      const remainder = numeroPreguntas % totalChunks;
+          const dificultadMap: Record<string, string> = {
+            facil: "básicos y conceptos fundamentales",
+            media: "comprensión, aplicación y análisis de conceptos",
+            dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
+          };
 
-      const chunkPromises = chunks.map(async (chunkContent, i) => {
-        const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
-        if (questionsForThisChunk <= 0) return [];
+          sendSSE({ type: "log", message: `Iniciando generación: ${numeroPreguntas} preguntas, nivel ${dificultad}` });
 
-        // Pequeño retardo escalonado (500ms) para no saturar
-        await wait(i * 500);
+          const chunks = splitText(temario, 8000);
+          sendSSE({ type: "log", message: `Temario dividido en ${chunks.length} fragmentos.` });
 
-        const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
+          let allQuestions: ExamQuestion[] = [];
+          
+          const totalChunks = chunks.length;
+          const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
+          const remainder = numeroPreguntas % totalChunks;
+
+          const chunkPromises = chunks.map(async (chunkContent, i) => {
+            const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
+            if (questionsForThisChunk <= 0) return [];
+
+            await wait(i * 500);
+            sendSSE({ type: "log", message: `Procesando fragmento ${i + 1}/${totalChunks}...` });
+
+            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
 
 <reglas_inquebrantables>
 1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÑOL. Traduce conceptos si están en inglés.
@@ -295,148 +303,136 @@ export default {
 
 Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
 
-        const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-        const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas completamente nuevas y variadas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}). No repitas estilos de generaciones anteriores.
+            const userPrompt = `Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
 
 <fragmento_temario>
 ${chunkContent}
 </fragmento_temario>
 
-RECORDATORIO: Devuelve SOLO el código JSON estructurado. Aplica fielmente las reglas de longitud idéntica para todas las opciones, cero meta-lenguaje y sin prefijos en las opciones.`;
+RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
 
-        let attempts = 0;
-        let success = false;
-        let chunkQuestions: ExamQuestion[] = [];
+            let attempts = 0;
+            let success = false;
+            let chunkQuestions: ExamQuestion[] = [];
+            let chunkLastError = "";
 
-        while (attempts < 3 && !success) {
-          try {
-            if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
-
-            // Estrategia de modelos: Gemini Flash (rapido/estable) -> Nemotron (potente) -> Auto
-            const models = [
-              "google/gemini-flash-1.5:free",
-              "nvidia/nemotron-3-super-120b-a12b:free",
-              "openrouter/free"
-            ];
-            const currentModel = models[Math.min(attempts, models.length - 1)];
-
-            const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://examsphere.app",
-                "X-Title": "ExamSphere",
-              },
-              body: JSON.stringify({
-                model: currentModel,
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: userPrompt }
-                ],
-                temperature: 0.1
-              })
-            }, env, currentModel);
-
-            if (!response.ok) {
-              const errText = await response.text();
-              let errorMsg = `OpenRouter error: ${response.status}`;
+            while (attempts < 3 && !success) {
               try {
-                const errJson = JSON.parse(errText);
-                errorMsg = errJson.error?.message || errJson.error || errorMsg;
-              } catch (e) { }
-              lastError = errorMsg;
-              throw new Error(errorMsg);
-            }
+                if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
-            const data: any = await response.json();
-            let content = data.choices?.[0]?.message?.content || "";
-            content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+                const models = [
+                  "google/gemini-flash-1.5:free",
+                  "nvidia/nemotron-3-super-120b-a12b:free",
+                  "openrouter/free"
+                ];
+                const currentModel = models[Math.min(attempts, models.length - 1)];
 
-            let parsed: any;
-            try {
-              parsed = JSON.parse(content);
-            } catch (e) {
-              const jsonMatch = content.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                try {
-                  parsed = JSON.parse(jsonMatch[0]);
-                } catch (e2) {
-                  console.error("Failed to parse regex match", e2);
+                // LOG AL NAVEGADOR
+                sendSSE({ type: "log", message: `Fragmento ${i + 1}: Intento ${attempts + 1} con ${currentModel}...` });
+
+                const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://examsphere.app",
+                    "X-Title": "ExamSphere",
+                  },
+                  body: JSON.stringify({
+                    model: currentModel,
+                    messages: [
+                      { role: "system", content: systemPrompt },
+                      { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.1
+                  })
+                }, env, currentModel);
+
+                if (!response.ok) {
+                  const errText = await response.text();
+                  throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
                 }
+
+                const data: any = await response.json();
+                let content = data.choices?.[0]?.message?.content || "";
+                content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+
+                let parsed: any;
+                try {
+                  parsed = JSON.parse(content);
+                } catch (e) {
+                  const jsonMatch = content.match(/\{[\s\S]*\}/);
+                  if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+                }
+
+                if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
+                  chunkQuestions = parsed.questions.map((q: any) => {
+                    const choices = [...q.choices];
+                    const correctChoice = choices[q.answerIndex];
+                    for (let j = choices.length - 1; j > 0; j--) {
+                      const k = Math.floor(Math.random() * (j + 1));
+                      [choices[j], choices[k]] = [choices[k], choices[j]];
+                    }
+                    return {
+                      ...q,
+                      choices,
+                      answerIndex: choices.indexOf(correctChoice) === -1 ? 0 : choices.indexOf(correctChoice)
+                    };
+                  });
+                  success = true;
+                  sendSSE({ type: "log", message: `Fragmento ${i + 1}: ¡Éxito!` });
+                } else {
+                  throw new Error("Invalid JSON structure");
+                }
+              } catch (e: any) {
+                chunkLastError = e.message;
+                attempts++;
               }
             }
+            if (!success) sendSSE({ type: "log", message: `Fragmento ${i + 1}: Falló tras 3 intentos. ${chunkLastError}` });
+            return chunkQuestions;
+          });
 
-            if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
-              chunkQuestions = parsed.questions.map((q: any) => {
-                const choices = [...q.choices];
-                const correctChoice = choices[q.answerIndex];
-                for (let j = choices.length - 1; j > 0; j--) {
-                  const k = Math.floor(Math.random() * (j + 1));
-                  [choices[j], choices[k]] = [choices[k], choices[j]];
-                }
-                let newAnswerIndex = choices.indexOf(correctChoice);
-                if (newAnswerIndex === -1) newAnswerIndex = 0;
-                return {
-                  ...q,
-                  choices: choices,
-                  answerIndex: newAnswerIndex
-                };
-              });
-              success = true;
-            } else {
-              lastError = "Invalid JSON structure from AI";
-              throw new Error("Invalid JSON structure");
-            }
-          } catch (e: any) {
-            console.error(`Attempt ${attempts + 1} failed for chunk ${i}:`, e);
-            lastError = e.message || lastError;
-            attempts++;
+          const results = await Promise.all(chunkPromises);
+          allQuestions = results.flat();
+
+          if (allQuestions.length === 0) {
+            sendSSE({ type: "error", message: "No se pudieron generar preguntas." });
+          } else {
+            const finalQuestions = allQuestions.map((q, index) => ({ ...q, id: index + 1 }));
+            const responseData: ExamResponse = {
+              title: `Examen - ${curso}`,
+              difficulty: dificultad,
+              questions: finalQuestions
+            };
+
+            // Enviar resultado final
+            sendSSE({ type: "result", data: responseData });
+            
+            // Track metrics
+            const duration = Date.now() - startTime;
+            ctx.waitUntil((async () => {
+              await incrementStatDaily(env.STATS_KV, 'e');
+              await incrementStat(env.STATS_KV, `diff:${dificultad}`);
+              await incrementStat(env.STATS_KV, `course:${curso}`);
+              await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
+              await incrementStat(env.STATS_KV, `stats:total_gen_time`, duration);
+            })());
           }
+        } catch (error: any) {
+          sendSSE({ type: "error", message: error.message });
+        } finally {
+          controller.close();
         }
-        return chunkQuestions;
-      });
-
-      const results = await Promise.all(chunkPromises);
-      allQuestions = results.flat();
-
-      if (allQuestions.length === 0) {
-        return new Response(JSON.stringify({ error: `IA Error: ${lastError || "No se pudieron generar preguntas."}` }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
-        });
       }
+    });
 
-      // TRACK EXAM GENERATION AND METRICS (NON-BLOCKING with ctx.waitUntil)
-      const duration = Date.now() - startTime;
-      ctx.waitUntil((async () => {
-        await incrementStatDaily(env.STATS_KV, 'e');
-        await incrementStat(env.STATS_KV, `diff:${dificultad}`);
-        await incrementStat(env.STATS_KV, `course:${curso}`);
-        await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
-        await incrementStat(env.STATS_KV, `stats:total_gen_time`, duration);
-      })());
-
-      // Re-index IDs
-      const finalQuestions = allQuestions.map((q, index) => ({
-        ...q,
-        id: index + 1
-      }));
-
-      const responseData: ExamResponse = {
-        title: `Examen - ${curso}`,
-        difficulty: dificultad,
-        questions: finalQuestions
-      };
-
-      return new Response(JSON.stringify(responseData), {
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
-      });
-
-    } catch (error: any) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
-      });
-    }
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        ...corsHeaders()
+      },
+    });
   },
 };
