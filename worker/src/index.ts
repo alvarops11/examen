@@ -1,7 +1,9 @@
 
 export interface Env {
   OPENROUTER_API_KEY: string;
-  OPENROUTER_API_KEY_BACKUP?: string;
+  OPENROUTER_API_KEY_BACKUP_1?: string;
+  OPENROUTER_API_KEY_BACKUP_2?: string;
+  OPENROUTER_API_KEY_BACKUP_3?: string;
   STATS_KV: KVNamespace;
 }
 
@@ -79,40 +81,63 @@ async function incrementStatDaily(kv: KVNamespace, type: string, amount: number 
   await incrementStat(kv, `${type}:all`, amount);
 }
 
-// Helper para hacer fetch con retry y failover
+// Helper para hacer fetch con retry y failover mejorado
 async function fetchWithFailover(
   url: string,
   options: RequestInit,
-  env: Env
+  env: Env,
+  modelName: string
 ): Promise<Response> {
   const keys = [env.OPENROUTER_API_KEY];
-  if (env.OPENROUTER_API_KEY_BACKUP) {
-    keys.push(env.OPENROUTER_API_KEY_BACKUP);
-  }
+  if (env.OPENROUTER_API_KEY_BACKUP_1) keys.push(env.OPENROUTER_API_KEY_BACKUP_1);
+  if (env.OPENROUTER_API_KEY_BACKUP_2) keys.push(env.OPENROUTER_API_KEY_BACKUP_2);
+  if (env.OPENROUTER_API_KEY_BACKUP_3) keys.push(env.OPENROUTER_API_KEY_BACKUP_3);
 
-  for (const apiKey of keys) {
+  let lastErrorMsg = "Servicio no disponible temporalmente.";
+
+  for (let i = 0; i < keys.length; i++) {
+    const apiKey = keys[i];
     const headers = new Headers(options.headers);
     headers.set("Authorization", `Bearer ${apiKey}`);
 
+    // LOG: Intento con key específica
+    console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${keys.length}...`);
+
     try {
+      // Implementamos un timeout de 60 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       // Si es exitoso o es un error de cliente (400) que no sea auth/rate limit, retornamos
       if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
+        if (response.ok) console.log(`[Worker] Éxito con modelo ${modelName} y Key ${i + 1}.`);
         return response;
       }
 
-      console.warn(`API Key falló con status ${response.status}. Intentando siguiente key si existe...`);
-    } catch (error) {
-      console.warn(`Error de red con API Key. Intentando siguiente key...`, error);
+      console.warn(`[Worker] API Key ${i + 1} falló con status ${response.status}.`);
+      lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
+      if (response.status === 429) lastErrorMsg = "Rate limit (429)";
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn(`[Worker] Timeout (60s) alcanzado para modelo ${modelName} con Key ${i + 1}.`);
+        lastErrorMsg = "Timeout (60s)";
+      } else {
+        console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
+        lastErrorMsg = error.message || "Network Error";
+      }
     }
   }
 
   // Si todas fallan, lanzar error
-  throw new Error("Todas las API keys fallaron. Servicio no disponible temporalmente.");
+  throw new Error(`Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`);
 }
 
 export default {
@@ -214,15 +239,15 @@ export default {
         });
       }
 
-      const model = "openrouter/auto";
+      const model = "openrouter/free";
       const dificultadMap: Record<string, string> = {
         facil: "básicos y conceptos fundamentales",
         media: "comprensión, aplicación y análisis de conceptos",
         dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
       };
 
-      // OPTIMIZACIÓN: Reducción de MaxChunkSize para mayor paralelismo
-      const chunks = splitText(temario, 3000);
+      // OPTIMIZACIÓN: Reducción a 8000 para mayor foco y velocidad por fragmento
+      const chunks = splitText(temario, 8000);
       let allQuestions: ExamQuestion[] = [];
       let lastError = "";
 
@@ -234,86 +259,50 @@ export default {
         const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
         if (questionsForThisChunk <= 0) return [];
 
-        const systemPrompt = `Eres una inteligencia artificial que actúa como un profesor universitario experto en evaluación académica. Tu único objetivo es generar preguntas de opción múltiple perfectamente válidas para un examen oficial, a partir de un fragmento de temario que se te proporcionará. No eres un asistente general ni un generador creativo. Eres un evaluador experto.
+        // Pequeño retardo escalonado (500ms) para no saturar
+        await wait(i * 500);
 
-Comportamiento general:
-- Actúa como un docente universitario con experiencia en evaluación rigurosa.
-- Evalúa solo con base en el contenido proporcionado. No completes lagunas, no infieras, no añadas ejemplos no presentes.
+        const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
 
-IDIOMA (REGLA ABSOLUTA):
-- TODO el contenido generado debe estar en ESPAÑOL: enunciados, opciones, explicaciones y cualquier texto. Sin excepciones.
-- Está TERMINANTEMENTE PROHIBIDO usar palabras, frases, términos técnicos en inglés o cualquier otro idioma, aunque el temario contenga fragmentos en otro idioma. Si el concepto tiene nombre en inglés, tradúcelo o usa la denominación académica en español.
+<reglas_inquebrantables>
+1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÑOL. Traduce conceptos si están en inglés.
+2. CERO META-LENGUAJE: Trata la información como conocimiento universal. NUNCA uses frases como "según el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la información proviene de un texto.
+3. SOLO INFORMACIÓN PROPORCIONADA: Evalúa exclusivamente la información del <fragmento_temario>. Está TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotéticas si el texto es de literatura).
+4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por características, funcionamientos o consecuencias.
+5. HOMOGENEIDAD DE OPCIONES (CRÍTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaño.
+6. FORMATO DE OPCIONES: No incluyes jamás prefijos como "A)", "B)", "1." al inicio de las opciones.
+7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (número base 0) y "explanation" (explicación directa sin referencias al texto).
+</reglas_inquebrantables>
 
-Uso del temario (REGLA DE ORO):
-- Usa EXCLUSIVAMENTE la información contenida en el fragmento de temario proporcionado.
-- Todas las preguntas, opciones y explicaciones deben ser trazables directamente al texto.
-- Está terminantemente prohibido usar conocimientos externos o inventar contenidos.
-- PROHIBICIÓN DE REFERENCIAS INTERNAS Y META-LENGUAJE: No menciones jamás identificadores de documentos, números de página, anexos o referencias cruzadas (ej. "según el Doc. 48", "véase pág 12"). Además, está TERMINANTEMENTE PROHIBIDO usar frases que aludan al origen de la información como "según el fragmento", "basado en el texto proporcionado", "en este fragmento" o "según el autor". El alumno NO debe saber que hay un fragmento de origen; la pregunta debe formularse como un conocimiento general absoluto.
-- Si alguna pregunta requiere una cita o parte del temario para su comprensión, ese fragmento debe estar integrado literalmente dentro del enunciado de la pregunta sin decir que es una cita.
-
-Generación de examen:
-- Genera exactamente ${questionsForThisChunk} preguntas.
-- Cada pregunta tendrá exactamente ${numeroRespuestas || 4} opciones.
-- Solo una opción es correcta, indicada en el campo answerIndex.
-
-Redacción del enunciado:
-- Plantea una única cuestión clara.
-- El enunciado debe entenderse sin necesidad de leer las opciones.
-- Usa lenguaje académico, sin vaguedades ni pistas implícitas.
-- EJEMPLO PROHIBIDO (Referencia): "¿Qué dice el Doc. 48 sobre...?"
-- EJEMPLO PROHIBIDO (Meta-lenguaje): "¿Cuál es la característica principal... según el fragmento?"
-- EJEMPLO CORRECTO: "¿Cuál es la característica principal que define el inicio del Neolítico?" (eliminando cualquier rastro de la fuente).
-
-PROHIBICIÓN DE PREGUNTAS DEFINICIONALES TRAMPA (REGLA CRÍTICA):
-- Está TERMINANTEMENTE PROHIBIDO el patrón: "¿Cómo se denomina el concepto que [descripción exhaustiva que solo encaja con la respuesta]?". Este tipo de enunciado convierte la pregunta en trivial porque el alumno identifica la respuesta única por descarte.
-- EJEMPLO PROHIBIDO: "¿Cómo se llama el proceso por el cual las células absorben glucosa mediante transportadores GLUT, requiere insulina y es saturable?"
-- La forma correcta es evaluar desde el concepto hacia sus características, NO al revés. Pregunta qué hace, cómo funciona, cuál es la consecuencia o en qué se diferencia.
-- EJEMPLO CORRECTO: "¿Qué característica define la captación de glucosa mediada por transportadores GLUT en células musculares?"
-
-Reglas críticas anti-sesgo de longitud (PROHIBICIÓN DE PATRONES):
-- La opción correcta NO debe ser nunca la más larga por sistema. Es una señal de IA débil.
-- REFUERZA LA DIFICULTAD: En muchas preguntas, haz que la opción correcta sea significativamente más CORTA y directa que los distractores.
-- TRAMPA PARA ESTUDIANTES: Si una opción destaca por ser muy detallada, técnica o extensa → esa opción DEBE ser un distractor incorrecto casi siempre.
-- Todas las opciones deben ser visualmente equilibradas (±5% de longitud). Evita el "efecto escalera".
-- Todas las opciones deben seguir la misma estructura gramatical y técnica.
-- Está TERMINANTEMENTE PROHIBIDO incluir aclaraciones o justificaciones tipo "porque..." o "(según...)" dentro de las opciones.
-
-Sobre los distractores:
-- Todos los distractores deben ser plausibles y relacionados con el temario.
-- Deben fallar por errores conceptuales sutiles, no por ser absurdos o evidentes.
-- Evita pistas internas como absolutos solo en distractores o repetir palabras del enunciado solo en la correcta.
-
-Explicación:
-- Cada pregunta debe incluir una explicación breve, objetiva y académica que justifique solo la opción correcta.
-- No se deben explicar los distractores.
-- No se debe introducir información nueva.
-
-Variedad obligatoria (REGLA CRÍTICA):
-- Cada examen que generes debe ser ÚNICO e IRREPETIBLE. Varía los conceptos evaluados, el ángulo de análisis, el estilo de enunciado y los distractores en cada ejecución.
-- NUNCA generes las mismas preguntas ni enunciados similares a los de generaciones anteriores del mismo temario.
-- Explora distintas partes del fragmento en cada llamada, priorizando aspectos que no hayas cubierto aún.
-
-Formato de salida:
-- La salida debe ser un objeto JSON válido, sin ningún texto adicional, con la siguiente estructura exacta:
+<ejemplo_formato_perfecto>
 {
   "questions": [
     {
       "id": 1,
-      "question": "Texto del enunciado claro y académico. Si se requiere citar un fragmento, debe ir aquí.",
-      "choices": ["Opción A", "Opción B", "Opción C", "Opción D"],
-      "answerIndex": 2,
-      "explanation": "Frase breve y justificada únicamente con el temario."
+      "question": "¿Qué característica define el inicio funcional del Neolítico?",
+      "choices": [
+        "El asentamiento poblacional y organización orientada hacia la práctica de la agricultura inicial.",
+        "El desarrollo tecnológico de armamento punzante orientado fundamentalmente hacia fines cinegéticos.",
+        "La fragmentación social acelerada dependiente del control de incipientes rutas de tránsito marítimo.",
+        "La rápida adopción de herramientas metalúrgicas dedicadas fundamentalmente al comercio de excedentes."
+      ],
+      "answerIndex": 0,
+      "explanation": "El Neolítico se define por la transición a una economía de producción enfocada sobre todo en las prácticas agrícolas continuas."
     }
   ]
-}`;
+}
+</ejemplo_formato_perfecto>
+
+Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
 
         const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-        const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas COMPLETAMENTE NUEVAS Y DIFERENTES para el curso ${curso} nivel ${dificultadMap[dificultad] || "medio"}. Asegúrate de que sean distintas a cualquier examen previo.
-    
-FRAGMENTO DE TEMARIO (${i + 1}/${totalChunks}):
-${chunkContent}
+        const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas completamente nuevas y variadas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}). No repitas estilos de generaciones anteriores.
 
-RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions". Las preguntas deben ser únicas e irrepetibles.`;
+<fragmento_temario>
+${chunkContent}
+</fragmento_temario>
+
+RECORDATORIO: Devuelve SOLO el código JSON estructurado. Aplica fielmente las reglas de longitud idéntica para todas las opciones, cero meta-lenguaje y sin prefijos en las opciones.`;
 
         let attempts = 0;
         let success = false;
@@ -323,6 +312,14 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions". Las preguntas 
           try {
             if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
+            // Estrategia de modelos: Gemini Flash (rapido/estable) -> Nemotron (potente) -> Auto
+            const models = [
+              "google/gemini-flash-1.5:free",
+              "nvidia/nemotron-3-super-120b-a12b:free",
+              "openrouter/free"
+            ];
+            const currentModel = models[Math.min(attempts, models.length - 1)];
+
             const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               headers: {
@@ -331,14 +328,14 @@ RECORDATORIO: Devuelve SOLO el JSON con la propiedad "questions". Las preguntas 
                 "X-Title": "ExamSphere",
               },
               body: JSON.stringify({
-                model: model,
+                model: currentModel,
                 messages: [
                   { role: "system", content: systemPrompt },
                   { role: "user", content: userPrompt }
                 ],
-                temperature: 0.95,
+                temperature: 0.1
               })
-            }, env);
+            }, env, currentModel);
 
             if (!response.ok) {
               const errText = await response.text();
