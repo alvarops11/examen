@@ -80,20 +80,21 @@ export const generateExamPDF = (
 
     let currentY = 80;
 
+    const ensureSpace = (requiredHeight: number) => {
+        if (currentY + requiredHeight <= pageHeight - 20) return;
+        addWatermark(doc);
+        doc.addPage();
+        currentY = 20;
+    };
+
     // Add questions
     examData.questions.forEach((q, index) => {
-        // Check if we need a new page
-        if (currentY > pageHeight - 40) {
-            addWatermark(doc);
-            doc.addPage();
-            currentY = 20;
-        }
-
         // Question text
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         const questionText = `${index + 1}. ${q.question}`;
         const splitQuestion = doc.splitTextToSize(questionText, pageWidth - 28);
+        ensureSpace((splitQuestion.length * 7) + 12);
         doc.text(splitQuestion, 14, currentY);
         currentY += (splitQuestion.length * 7);
 
@@ -111,6 +112,7 @@ export const generateExamPDF = (
             }
 
             const splitChoice = doc.splitTextToSize(choiceText, pageWidth - 35);
+            ensureSpace((splitChoice.length * 6) + 6);
             doc.text(splitChoice, 20, currentY);
             currentY += (splitChoice.length * 6);
 
@@ -127,6 +129,7 @@ export const generateExamPDF = (
             doc.setTextColor(100, 100, 100);
             const explanationText = `Explicación: ${q.explanation}`;
             const splitExplanation = doc.splitTextToSize(explanationText, pageWidth - 35);
+            ensureSpace((splitExplanation.length * 5) + 10);
             doc.text(splitExplanation, 20, currentY);
             currentY += (splitExplanation.length * 5) + 5;
             doc.setTextColor(33, 33, 33);
