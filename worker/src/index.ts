@@ -29,6 +29,50 @@ interface GenerateRequest {
   temario: string;
 }
 
+type ErrorCode =
+  | "RATE_LIMIT"
+  | "EMPTY_CONTENT"
+  | "CONTENT_TOO_SHORT"
+  | "DOCUMENT_PROCESSING_FAILED"
+  | "UPSTREAM_UNAVAILABLE"
+  | "SERVER_MISCONFIG"
+  | "NO_QUESTIONS_GENERATED"
+  | "UNKNOWN";
+
+class WorkerAppError extends Error {
+  code: ErrorCode;
+  userMessage: string;
+  retryable: boolean;
+
+  constructor(code: ErrorCode, message: string, userMessage: string, retryable: boolean = false) {
+    super(message);
+    this.name = "WorkerAppError";
+    this.code = code;
+    this.userMessage = userMessage;
+    this.retryable = retryable;
+  }
+}
+
+function toErrorEvent(error: unknown) {
+  if (error instanceof WorkerAppError) {
+    return {
+      type: "error",
+      code: error.code,
+      message: error.message,
+      userMessage: error.userMessage,
+      retryable: error.retryable,
+    };
+  }
+
+  return {
+    type: "error",
+    code: "UNKNOWN",
+    message: error instanceof Error ? error.message : "Unknown error",
+    userMessage: "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
+    retryable: true,
+  };
+}
+
 // Helper para dividir el texto en chunks sin cortar párrafos
 function splitOversizedBlock(block: string, maxChunkSize: number): string[] {
   const normalized = block.trim();
@@ -165,6 +209,7 @@ async function fetchWithFailover(
   if (env.OPENROUTER_API_KEY_BACKUP_3) keys.push(env.OPENROUTER_API_KEY_BACKUP_3);
 
   let lastErrorMsg = "Servicio no disponible temporalmente.";
+  let lastStatus: number | null = null;
 
   for (let i = 0; i < keys.length; i++) {
     const apiKey = keys[i];
@@ -187,6 +232,7 @@ async function fetchWithFailover(
 
         console.warn(`[Worker] API Key ${i + 1} falló con status ${response.status}.`);
         lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
+        lastStatus = response.status;
         if (response.status === 429) {
           lastErrorMsg = "Rate limit (429)";
           if (retry < 1) {
@@ -207,8 +253,21 @@ async function fetchWithFailover(
     }
   }
 
-  // Si todas fallan, lanzar error
-  throw new Error(`Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`);
+  if (lastStatus === 429 || lastErrorMsg.includes("Rate limit")) {
+    throw new WorkerAppError(
+      "RATE_LIMIT",
+      `Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`,
+      "Ahora mismo se están generando demasiados exámenes. Vuelve a intentarlo en un momento.",
+      true
+    );
+  }
+
+  throw new WorkerAppError(
+    "UPSTREAM_UNAVAILABLE",
+    `Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`,
+    "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
+    true
+  );
 }
 
 export default {
@@ -305,7 +364,11 @@ export default {
           if (!env.OPENROUTER_API_KEY) {
             const availableKeys = Object.keys(env).join(", ");
             console.error(`[Worker] Missing API Key. Available env keys: ${availableKeys}`);
-            sendSSE({ type: "error", message: `Server misconfiguration: Missing API Key. (Available: ${availableKeys})` });
+            sendSSE(toErrorEvent(new WorkerAppError(
+              "SERVER_MISCONFIG",
+              `Server misconfiguration: Missing API Key. (Available: ${availableKeys})`,
+              "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte."
+            )));
             controller.close();
             return;
           }
@@ -314,7 +377,21 @@ export default {
           const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario } = body;
 
           if (!temario || !temario.trim()) {
-            sendSSE({ type: "error", message: "Temario requerido" });
+            sendSSE(toErrorEvent(new WorkerAppError(
+              "EMPTY_CONTENT",
+              "Temario requerido",
+              "Añade contenido antes de generar el examen."
+            )));
+            controller.close();
+            return;
+          }
+
+          if (temario.trim().length < 120) {
+            sendSSE(toErrorEvent(new WorkerAppError(
+              "CONTENT_TOO_SHORT",
+              "Temario demasiado breve",
+              "El contenido parece demasiado breve para crear un examen útil. Añade más apuntes o un fragmento más completo."
+            )));
             controller.close();
             return;
           }
@@ -336,6 +413,7 @@ export default {
           sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
 
           let allQuestions: ExamQuestion[] = [];
+          const chunkFailureReasons: string[] = [];
 
           const totalChunks = chunks.length;
           const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
@@ -468,7 +546,10 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                 attempts++;
               }
             }
-            if (!success) sendSSE({ type: "log", message: `Aviso: Dificultad en sección ${i + 1}, ajustando parámetros.` });
+            if (!success) {
+              chunkFailureReasons.push(chunkLastError || "Unknown chunk error");
+              sendSSE({ type: "log", message: `Aviso: Dificultad en sección ${i + 1}, ajustando parámetros.` });
+            }
             return chunkQuestions;
           });
 
@@ -479,7 +560,29 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
 
           if (allQuestions.length === 0) {
             console.error("[Worker] Error: No se generó ninguna pregunta.");
-            sendSSE({ type: "error", message: "No se pudieron generar preguntas. Intenta con un temario más extenso." });
+            const failureText = chunkFailureReasons.join(" | ");
+            if (failureText.includes("Rate limit")) {
+              sendSSE(toErrorEvent(new WorkerAppError(
+                "RATE_LIMIT",
+                failureText,
+                "Ahora mismo se están generando demasiados exámenes. Vuelve a intentarlo en un momento.",
+                true
+              )));
+            } else if (failureText.includes("Invalid JSON structure") || failureText.includes("OpenRouter error")) {
+              sendSSE(toErrorEvent(new WorkerAppError(
+                "DOCUMENT_PROCESSING_FAILED",
+                failureText || "No se pudieron generar preguntas válidas.",
+                "No hemos podido aprovechar bien el contenido del documento. Prueba con otro fragmento o con unos apuntes más claros.",
+                true
+              )));
+            } else {
+              sendSSE(toErrorEvent(new WorkerAppError(
+                "NO_QUESTIONS_GENERATED",
+                failureText || "No se pudieron generar preguntas.",
+                "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
+                true
+              )));
+            }
           } else {
             const finalQuestions = allQuestions.map((q, index) => ({ ...q, id: index + 1 }));
             const responseData: ExamResponse = {
@@ -503,7 +606,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             })());
           }
         } catch (error: any) {
-          sendSSE({ type: "error", message: error.message });
+          sendSSE(toErrorEvent(error));
         } finally {
           controller.close();
         }
