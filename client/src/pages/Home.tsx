@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import UpdateBanner from "@/components/UpdateBanner";
 import { Link } from "wouter";
 import SEO from "@/components/SEO";
 
@@ -101,6 +102,14 @@ export default function Home() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const normalizeExtractedText = (text: string): string => {
+    return text
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   // Extraer texto de PDF usando pdfjs-dist
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
@@ -120,7 +129,7 @@ export default function Home() {
         fullText += pageText + "\n\n";
       }
 
-      const cleanedText = fullText.replace(/\s+/g, " ").trim();
+      const cleanedText = normalizeExtractedText(fullText);
       if (!cleanedText || cleanedText.length < 10) {
         throw new Error("No se pudo extraer texto válido del PDF");
       }
@@ -830,6 +839,7 @@ export default function Home() {
       )}
 
       <Footer />
+      <UpdateBanner />
       <CookieBanner />
     </div>
   );

@@ -30,13 +30,48 @@ interface GenerateRequest {
 }
 
 // Helper para dividir el texto en chunks sin cortar párrafos
+function splitOversizedBlock(block: string, maxChunkSize: number): string[] {
+  const normalized = block.trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxChunkSize) return [normalized];
+
+  const parts: string[] = [];
+  let start = 0;
+
+  while (start < normalized.length) {
+    let end = Math.min(start + maxChunkSize, normalized.length);
+
+    if (end < normalized.length) {
+      const breakCandidates = [
+        normalized.lastIndexOf("\n", end),
+        normalized.lastIndexOf(". ", end),
+        normalized.lastIndexOf("; ", end),
+        normalized.lastIndexOf(", ", end),
+        normalized.lastIndexOf(" ", end),
+      ];
+      const breakpoint = breakCandidates.find((index) => index > start + Math.floor(maxChunkSize * 0.6));
+      if (breakpoint !== undefined && breakpoint > start) {
+        end = breakpoint + 1;
+      }
+    }
+
+    parts.push(normalized.slice(start, end).trim());
+    start = end;
+  }
+
+  return parts.filter(Boolean);
+}
+
 function splitText(text: string, maxChunkSize = 8000): string[] {
   if (text.length <= maxChunkSize) return [text];
 
   const chunks: string[] = [];
   let currentChunk = "";
   // Dividir por párrafos dobles o saltos de línea para conservar contexto
-  const paragraphs = text.split(/\n\n+/);
+  const paragraphs = text
+    .split(/\n\n+/)
+    .flatMap((paragraph) => splitOversizedBlock(paragraph, maxChunkSize))
+    .filter(Boolean);
 
   for (const p of paragraphs) {
     if ((currentChunk + "\n\n" + p).length > maxChunkSize) {
@@ -51,7 +86,43 @@ function splitText(text: string, maxChunkSize = 8000): string[] {
   return chunks.length > 0 ? chunks : [text];
 }
 
+function selectRepresentativeChunks(chunks: string[], maxChunks: number): string[] {
+  if (chunks.length <= maxChunks) return chunks;
+
+  const selected: string[] = [];
+  const step = (chunks.length - 1) / (maxChunks - 1);
+
+  for (let i = 0; i < maxChunks; i++) {
+    const index = Math.round(i * step);
+    selected.push(chunks[index]);
+  }
+
+  return selected;
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runChunkTasksWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  concurrency: number
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextTaskIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextTaskIndex++;
+      if (currentIndex >= tasks.length) return;
+      results[currentIndex] = await tasks[currentIndex]();
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker())
+  );
+
+  return results;
+}
 
 function corsHeaders() {
   return {
@@ -97,30 +168,42 @@ async function fetchWithFailover(
 
   for (let i = 0; i < keys.length; i++) {
     const apiKey = keys[i];
-    const headers = new Headers(options.headers);
-    headers.set("Authorization", `Bearer ${apiKey}`);
+    for (let retry = 0; retry < 2; retry++) {
+      const headers = new Headers(options.headers);
+      headers.set("Authorization", `Bearer ${apiKey}`);
 
-    // LOG: Intento con key específica
-    console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${keys.length}...`);
+      console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${keys.length} (retry ${retry + 1}/2)...`);
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers,
+        });
 
-      // Si es exitoso o es un error de cliente (400) que no sea auth/rate limit, retornamos
-      if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
-        if (response.ok) console.log(`[Worker] Éxito con modelo ${modelName} y Key ${i + 1}.`);
-        return response;
+        if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
+          if (response.ok) console.log(`[Worker] Éxito con modelo ${modelName} y Key ${i + 1}.`);
+          return response;
+        }
+
+        console.warn(`[Worker] API Key ${i + 1} falló con status ${response.status}.`);
+        lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
+        if (response.status === 429) {
+          lastErrorMsg = "Rate limit (429)";
+          if (retry < 1) {
+            await wait(1200 * (retry + 1) + Math.random() * 800);
+            continue;
+          }
+        }
+      } catch (error: any) {
+        console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
+        lastErrorMsg = error.message || "Network Error";
+        if (retry < 1) {
+          await wait(1200 * (retry + 1) + Math.random() * 800);
+          continue;
+        }
       }
 
-      console.warn(`[Worker] API Key ${i + 1} falló con status ${response.status}.`);
-      lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
-      if (response.status === 429) lastErrorMsg = "Rate limit (429)";
-    } catch (error: any) {
-      console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
-      lastErrorMsg = error.message || "Network Error";
+      break;
     }
   }
 
@@ -244,8 +327,12 @@ export default {
 
           sendSSE({ type: "log", message: `Preparando tu examen de nivel ${dificultad}...` });
 
-          // OPTIMIZACIÓN AGRESIVA (V7): Fragmentos más pequeños para más paralelismo
-          const chunks = splitText(temario, 5500);
+          const allChunks = splitText(temario, 5500);
+          const chunks = selectRepresentativeChunks(allChunks, 12);
+          const chunkConcurrency = chunks.length >= 8 ? 2 : 3;
+          if (allChunks.length > chunks.length) {
+            sendSSE({ type: "log", message: `Documento extenso detectado: se ha optimizado el análisis para evitar bloqueos.` });
+          }
           sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
 
           let allQuestions: ExamQuestion[] = [];
@@ -254,7 +341,7 @@ export default {
           const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
           const remainder = numeroPreguntas % totalChunks;
 
-          const chunkPromises = chunks.map(async (chunkContent, i) => {
+          const chunkTasks = chunks.map((chunkContent, i) => async () => {
             const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
             if (questionsForThisChunk <= 0) return [];
 
@@ -385,8 +472,8 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             return chunkQuestions;
           });
 
-          console.log(`[Worker] Esperando ${chunks.length} fragmentos...`);
-          const results = await Promise.all(chunkPromises);
+          console.log(`[Worker] Procesando ${chunks.length} fragmentos con concurrencia ${chunkConcurrency}...`);
+          const results = await runChunkTasksWithConcurrency(chunkTasks, chunkConcurrency);
           allQuestions = results.flat();
           console.log(`[Worker] Generación completada. Total preguntas: ${allQuestions.length}`);
 
