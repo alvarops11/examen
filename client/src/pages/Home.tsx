@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3 } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
@@ -94,6 +94,7 @@ export default function Home() {
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(45 * 60);
   const [timerSeconds, setTimerSeconds] = useState(45 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [timerMinimized, setTimerMinimized] = useState(false);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
 
   // Juego de espera: Reacción
@@ -266,6 +267,7 @@ export default function Home() {
       setCorregido(false);
       setCalificacion(null);
       setTimerRunning(false);
+      setTimerMinimized(false);
       setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -330,6 +332,7 @@ export default function Home() {
     setCorregido(false);
     setCalificacion(null);
     setTimerRunning(false);
+    setTimerMinimized(false);
     setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
   };
 
@@ -668,7 +671,7 @@ export default function Home() {
                       onClick={() => handleTimerModeChange("down")}
                       className={`rounded-xl ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
-                      Cuenta atrás
+                      Temporizador
                     </Button>
                     <Button
                       type="button"
@@ -676,7 +679,7 @@ export default function Home() {
                       onClick={() => handleTimerModeChange("up")}
                       className={`rounded-xl ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
-                      Cuenta arriba
+                      Cronometro
                     </Button>
                   </div>
 
@@ -728,8 +731,28 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="hidden xl:block fixed left-4 top-1/2 -translate-y-1/2 z-40 w-[248px]">
-                <div className="rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-5">
+              <div className="hidden xl:block fixed left-4 top-1/2 -translate-y-1/2 z-40">
+                {timerMinimized ? (
+                  <div className="w-[88px] rounded-[28px] border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] px-3 py-4">
+                    <div className="flex flex-col items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setTimerMinimized(false)}
+                        className="h-8 w-8 rounded-full text-slate-500 hover:text-indigo-600"
+                        aria-label="Mostrar reloj"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                      <div className={`text-center text-sm font-black ${timerTextClass}`}>{displayedTimer}</div>
+                      <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-2.5 text-white shadow-lg`}>
+                        {timerMode === "down" ? <Hourglass className="w-4 h-4" /> : <Clock3 className="w-4 h-4" />}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                <div className="w-[248px] rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -743,6 +766,19 @@ export default function Home() {
                     </div>
                   </div>
 
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTimerMinimized(true)}
+                      className="h-8 rounded-xl px-2 text-slate-500 hover:text-indigo-600"
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Minimizar
+                    </Button>
+                  </div>
+
                   <div className="mt-5 grid grid-cols-2 gap-2">
                     <Button
                       type="button"
@@ -750,7 +786,7 @@ export default function Home() {
                       onClick={() => handleTimerModeChange("down")}
                       className={`rounded-xl text-xs ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
-                      Cuenta atrás
+                      Temporizador
                     </Button>
                     <Button
                       type="button"
@@ -758,7 +794,7 @@ export default function Home() {
                       onClick={() => handleTimerModeChange("up")}
                       className={`rounded-xl text-xs ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
-                      Cuenta arriba
+                      Cronometro
                     </Button>
                   </div>
 
@@ -809,6 +845,7 @@ export default function Home() {
                     </Button>
                   </div>
                 </div>
+                )}
               </div>
               {/* Exam Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -1093,3 +1130,4 @@ export default function Home() {
     </div>
   );
 }
+
