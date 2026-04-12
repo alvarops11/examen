@@ -1,19 +1,19 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3 } from "lucide-react";
 import { toast } from "sonner";
 import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
 import CookieBanner from "@/components/CookieBanner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import UpdateBanner from "@/components/UpdateBanner";
 import { Link } from "wouter";
 import SEO from "@/components/SEO";
+import { Input } from "@/components/ui/input";
 
 /**
  * Diseño: Neo-Academic Premium
@@ -47,6 +47,23 @@ const STUDY_FACTS = [
   "Hacerte auto-exámenes como este reduce la ansiedad ante el examen real."
 ];
 
+const TIMER_PRESETS = [15, 30, 45, 60];
+
+type TimerMode = "down" | "up";
+
+const formatTimer = (totalSeconds: number) => {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  if (hours > 0) {
+    return [hours, minutes, seconds].map((value) => value.toString().padStart(2, "0")).join(":");
+  }
+
+  return [minutes, seconds].map((value) => value.toString().padStart(2, "0")).join(":");
+};
+
 
 
 
@@ -72,6 +89,11 @@ export default function Home() {
   } | null>(null);
 
   const [progressMessage, setProgressMessage] = useState("Iniciando conexión...");
+  const [timerMode, setTimerMode] = useState<TimerMode>("down");
+  const [timerMinutesInput, setTimerMinutesInput] = useState("45");
+  const [timerDurationSeconds, setTimerDurationSeconds] = useState(45 * 60);
+  const [timerSeconds, setTimerSeconds] = useState(45 * 60);
+  const [timerRunning, setTimerRunning] = useState(false);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
 
   // Juego de espera: Reacción
@@ -83,6 +105,35 @@ export default function Home() {
     const left = Math.floor(Math.random() * 70) + 15 + '%';
     setTargetPos({ top, left });
     setScore((s: number) => s + 1);
+  };
+
+  const applyTimerDuration = (minutes: number) => {
+    const safeMinutes = Math.min(180, Math.max(1, Math.round(minutes)));
+    const nextDuration = safeMinutes * 60;
+    setTimerMinutesInput(String(safeMinutes));
+    setTimerDurationSeconds(nextDuration);
+    setTimerSeconds(timerMode === "down" ? nextDuration : 0);
+    setTimerRunning(false);
+  };
+
+  const handleTimerReset = () => {
+    setTimerRunning(false);
+    setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
+  };
+
+  const handleTimerModeChange = (mode: TimerMode) => {
+    setTimerMode(mode);
+    setTimerRunning(false);
+    setTimerSeconds(mode === "down" ? timerDurationSeconds : 0);
+  };
+
+  const handleTimerMinutesBlur = () => {
+    const parsed = Number(timerMinutesInput);
+    if (!Number.isFinite(parsed)) {
+      setTimerMinutesInput(String(Math.max(1, Math.round(timerDurationSeconds / 60))));
+      return;
+    }
+    applyTimerDuration(parsed);
   };
 
   useEffect(() => {
@@ -99,6 +150,28 @@ export default function Home() {
     }
     return () => clearInterval(interval);
   }, [loading]);
+
+  useEffect(() => {
+    if (!examen || !timerRunning) return;
+
+    const interval = window.setInterval(() => {
+      setTimerSeconds((currentSeconds) => {
+        if (timerMode === "down") {
+          if (currentSeconds <= 1) {
+            window.clearInterval(interval);
+            setTimerRunning(false);
+            toast.success("Tiempo finalizado");
+            return 0;
+          }
+          return currentSeconds - 1;
+        }
+
+        return currentSeconds + 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [examen, timerMode, timerRunning]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -192,6 +265,8 @@ export default function Home() {
       setRespuestas(new Array(data.questions.length).fill(null));
       setCorregido(false);
       setCalificacion(null);
+      setTimerRunning(false);
+      setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -254,6 +329,8 @@ export default function Home() {
     setRespuestas([]);
     setCorregido(false);
     setCalificacion(null);
+    setTimerRunning(false);
+    setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
   };
 
   // Descargar PDF
@@ -272,6 +349,14 @@ export default function Home() {
       toast.error("Error al generar el PDF");
     }
   };
+
+  const displayedTimer = formatTimer(timerSeconds);
+  const timerGradientClass = timerMode === "down" && timerSeconds <= 300
+    ? "from-rose-500 to-orange-500"
+    : "from-indigo-600 to-violet-600";
+  const timerTextClass = timerMode === "down" && timerSeconds <= 300
+    ? "text-rose-600"
+    : "text-indigo-600";
 
   return (
     <div className="min-h-screen overflow-x-hidden relative flex flex-col">
@@ -561,6 +646,170 @@ export default function Home() {
                   </div>
                 );
               })()}
+              <div className="xl:hidden sticky top-20 z-30">
+                <div className="mb-6 rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_18px_50px_rgba(79,70,229,0.12)] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                        {timerMode === "down" ? <Hourglass className="w-3.5 h-3.5" /> : <Clock3 className="w-3.5 h-3.5" />}
+                        Tiempo de examen
+                      </div>
+                      <div className={`mt-2 text-3xl font-black ${timerTextClass}`}>{displayedTimer}</div>
+                    </div>
+                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-3 text-white shadow-lg`}>
+                      {timerMode === "down" ? <Hourglass className="w-5 h-5" /> : <Clock3 className="w-5 h-5" />}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={timerMode === "down" ? "default" : "outline"}
+                      onClick={() => handleTimerModeChange("down")}
+                      className={`rounded-xl ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                    >
+                      Cuenta atrás
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={timerMode === "up" ? "default" : "outline"}
+                      onClick={() => handleTimerModeChange("up")}
+                      className={`rounded-xl ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                    >
+                      Cuenta arriba
+                    </Button>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={timerMinutesInput}
+                      onChange={(e) => setTimerMinutesInput(e.target.value)}
+                      onBlur={handleTimerMinutesBlur}
+                      className="h-11 rounded-xl border-indigo-100"
+                    />
+                    <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">min</span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {TIMER_PRESETS.map((preset) => (
+                      <Button
+                        key={preset}
+                        type="button"
+                        variant="outline"
+                        onClick={() => applyTimerDuration(preset)}
+                        className="rounded-xl border-indigo-100 px-0 text-xs font-bold text-slate-600"
+                      >
+                        {preset}m
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => setTimerRunning((current) => !current)}
+                      className="rounded-xl btn-gradient"
+                    >
+                      {timerRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                      {timerRunning ? "Pausar" : "Iniciar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleTimerReset}
+                      className="rounded-xl border-indigo-100 text-slate-600"
+                    >
+                      <TimerReset className="w-4 h-4 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="hidden xl:block fixed left-4 top-1/2 -translate-y-1/2 z-40 w-[248px]">
+                <div className="rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                        {timerMode === "down" ? <Hourglass className="w-3.5 h-3.5" /> : <Clock3 className="w-3.5 h-3.5" />}
+                        Cronómetro
+                      </div>
+                      <div className={`mt-3 text-[2rem] leading-none font-black ${timerTextClass}`}>{displayedTimer}</div>
+                    </div>
+                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-3 text-white shadow-lg`}>
+                      {timerMode === "down" ? <Hourglass className="w-5 h-5" /> : <Clock3 className="w-5 h-5" />}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={timerMode === "down" ? "default" : "outline"}
+                      onClick={() => handleTimerModeChange("down")}
+                      className={`rounded-xl text-xs ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                    >
+                      Cuenta atrás
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={timerMode === "up" ? "default" : "outline"}
+                      onClick={() => handleTimerModeChange("up")}
+                      className={`rounded-xl text-xs ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                    >
+                      Cuenta arriba
+                    </Button>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={timerMinutesInput}
+                      onChange={(e) => setTimerMinutesInput(e.target.value)}
+                      onBlur={handleTimerMinutesBlur}
+                      className="h-11 rounded-xl border-indigo-100"
+                    />
+                    <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">min</span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {TIMER_PRESETS.map((preset) => (
+                      <Button
+                        key={preset}
+                        type="button"
+                        variant="outline"
+                        onClick={() => applyTimerDuration(preset)}
+                        className="rounded-xl border-indigo-100 px-0 text-xs font-bold text-slate-600"
+                      >
+                        {preset}m
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => setTimerRunning((current) => !current)}
+                      className="rounded-xl btn-gradient"
+                    >
+                      {timerRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                      {timerRunning ? "Pausar" : "Iniciar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleTimerReset}
+                      className="rounded-xl border-indigo-100 text-slate-600"
+                    >
+                      <TimerReset className="w-4 h-4 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+              </div>
               {/* Exam Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>

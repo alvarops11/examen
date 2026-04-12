@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const UPDATE_ID = "2026-04-pdf-stability";
+const UPDATE_ID = "2026-04-exam-timer";
 const STORAGE_KEY = `updateBannerDismissed:${UPDATE_ID}`;
 
 export default function UpdateBanner() {
@@ -39,10 +39,10 @@ export default function UpdateBanner() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">
-                  Actualización realizada
+                  Actualizacion realizada
                 </p>
                 <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Mejoramos la estabilidad al generar exámenes desde PDFs largos y documentos densos.
+                  Ya puedes realizar tus simulacros con un reloj integrado para controlar el tiempo de forma mas comoda.
                 </p>
               </div>
               <Button
@@ -51,7 +51,7 @@ export default function UpdateBanner() {
                 size="icon-sm"
                 onClick={dismiss}
                 className="mt-[-2px] text-slate-400 hover:text-slate-700"
-                aria-label="Cerrar notificación"
+                aria-label="Cerrar notificacion"
               >
                 <X className="h-4 w-4" />
               </Button>

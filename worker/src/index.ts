@@ -144,6 +144,63 @@ function selectRepresentativeChunks(chunks: string[], maxChunks: number): string
   return selected;
 }
 
+function selectCompactChunks(chunks: string[], requestedQuestions: number): string[] {
+  if (chunks.length === 0) return [];
+
+  const targetChunkCount = Math.max(
+    3,
+    Math.min(6, requestedQuestions, Math.ceil(requestedQuestions / 4))
+  );
+
+  return selectRepresentativeChunks(chunks, Math.min(targetChunkCount, chunks.length));
+}
+
+function distributeQuestionCounts(totalQuestions: number, totalChunks: number): number[] {
+  if (totalChunks <= 0) return [];
+
+  const baseQuestions = Math.floor(totalQuestions / totalChunks);
+  const remainder = totalQuestions % totalChunks;
+
+  return Array.from({ length: totalChunks }, (_, index) => (
+    baseQuestions + (index < remainder ? 1 : 0)
+  ));
+}
+
+function sanitizeQuestion(rawQuestion: any, expectedChoices: number): ExamQuestion | null {
+  const question = typeof rawQuestion?.question === "string" ? rawQuestion.question.trim() : "";
+  const explanation = typeof rawQuestion?.explanation === "string" ? rawQuestion.explanation.trim() : "";
+  const rawChoices = Array.isArray(rawQuestion?.choices) ? rawQuestion.choices : [];
+  const choices = rawChoices
+    .filter((choice: unknown) => typeof choice === "string")
+    .map((choice: string) => choice.trim())
+    .filter(Boolean);
+  const answerIndex = Number.isInteger(rawQuestion?.answerIndex) ? rawQuestion.answerIndex : -1;
+
+  if (!question || !explanation) return null;
+  if (choices.length !== expectedChoices) return null;
+  if (answerIndex < 0 || answerIndex >= choices.length) return null;
+
+  const correctChoice = choices[answerIndex];
+  for (let i = choices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+
+  return {
+    id: 0,
+    question,
+    choices,
+    answerIndex: choices.indexOf(correctChoice),
+    explanation,
+  };
+}
+
+function sanitizeQuestions(rawQuestions: any[], expectedChoices: number): ExamQuestion[] {
+  return rawQuestions
+    .map((question) => sanitizeQuestion(question, expectedChoices))
+    .filter((question): question is ExamQuestion => question !== null);
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function runChunkTasksWithConcurrency<T>(
@@ -201,23 +258,27 @@ async function fetchWithFailover(
   url: string,
   options: RequestInit,
   env: Env,
-  modelName: string
+  modelName: string,
+  keyRotationOffset: number = 0
 ): Promise<Response> {
   const keys = [env.OPENROUTER_API_KEY];
   if (env.OPENROUTER_API_KEY_BACKUP_1) keys.push(env.OPENROUTER_API_KEY_BACKUP_1);
   if (env.OPENROUTER_API_KEY_BACKUP_2) keys.push(env.OPENROUTER_API_KEY_BACKUP_2);
   if (env.OPENROUTER_API_KEY_BACKUP_3) keys.push(env.OPENROUTER_API_KEY_BACKUP_3);
+  const orderedKeys = keys.map((_, index) => keys[(index + keyRotationOffset) % keys.length]);
 
   let lastErrorMsg = "Servicio no disponible temporalmente.";
   let lastStatus: number | null = null;
+  let sawRateLimit = false;
+  let sawOtherFailure = false;
 
-  for (let i = 0; i < keys.length; i++) {
-    const apiKey = keys[i];
+  for (let i = 0; i < orderedKeys.length; i++) {
+    const apiKey = orderedKeys[i];
     for (let retry = 0; retry < 2; retry++) {
       const headers = new Headers(options.headers);
       headers.set("Authorization", `Bearer ${apiKey}`);
 
-      console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${keys.length} (retry ${retry + 1}/2)...`);
+      console.log(`[Worker] Intentando modelo ${modelName} con API Key ${i + 1}/${orderedKeys.length} (retry ${retry + 1}/2, offset ${keyRotationOffset})...`);
 
       try {
         const response = await fetch(url, {
@@ -234,15 +295,19 @@ async function fetchWithFailover(
         lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
         lastStatus = response.status;
         if (response.status === 429) {
+          sawRateLimit = true;
           lastErrorMsg = "Rate limit (429)";
           if (retry < 1) {
             await wait(1200 * (retry + 1) + Math.random() * 800);
             continue;
           }
+        } else {
+          sawOtherFailure = true;
         }
       } catch (error: any) {
         console.warn(`[Worker] Error de red con Key ${i + 1}:`, error.message);
         lastErrorMsg = error.message || "Network Error";
+        sawOtherFailure = true;
         if (retry < 1) {
           await wait(1200 * (retry + 1) + Math.random() * 800);
           continue;
@@ -253,7 +318,7 @@ async function fetchWithFailover(
     }
   }
 
-  if (lastStatus === 429 || lastErrorMsg.includes("Rate limit")) {
+  if ((lastStatus === 429 || lastErrorMsg.includes("Rate limit")) && sawRateLimit && !sawOtherFailure) {
     throw new WorkerAppError(
       "RATE_LIMIT",
       `Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`,
@@ -405,9 +470,12 @@ export default {
           sendSSE({ type: "log", message: `Preparando tu examen de nivel ${dificultad}...` });
 
           const allChunks = splitText(temario, 5500);
-          const chunks = selectRepresentativeChunks(allChunks, 12);
-          const chunkConcurrency = chunks.length >= 8 ? 2 : 3;
-          if (allChunks.length > chunks.length) {
+          const useCompactMode = allChunks.length >= 18;
+          const chunks = useCompactMode
+            ? selectCompactChunks(allChunks, numeroPreguntas)
+            : selectRepresentativeChunks(allChunks, 12);
+          const chunkConcurrency = useCompactMode ? 2 : (chunks.length >= 8 ? 2 : 3);
+          if (useCompactMode) {
             sendSSE({ type: "log", message: `Documento extenso detectado: se ha optimizado el análisis para evitar bloqueos.` });
           }
           sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
@@ -415,12 +483,138 @@ export default {
           let allQuestions: ExamQuestion[] = [];
           const chunkFailureReasons: string[] = [];
 
-          const totalChunks = chunks.length;
-          const baseQuestions = Math.floor(numeroPreguntas / totalChunks);
-          const remainder = numeroPreguntas % totalChunks;
+          const initialDistribution = distributeQuestionCounts(numeroPreguntas, chunks.length);
+
+          const generateQuestionsForChunk = async (
+            chunkContent: string,
+            questionsForThisChunk: number,
+            sectionLabel: string,
+            rotationOffset: number
+          ): Promise<ExamQuestion[]> => {
+            if (questionsForThisChunk <= 0) return [];
+
+            sendSSE({ type: "log", message: `Extrayendo preguntas de la ${sectionLabel}...` });
+
+            const systemPrompt = `Eres un profesor universitario experto en evaluaciÃ³n. Tu objetivo es generar preguntas de opciÃ³n mÃºltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
+          
+<reglas_inquebrantables>
+1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÃ‘OL. Traduce conceptos si estÃ¡n en inglÃ©s.
+2. CERO META-LENGUAJE: Trata la informaciÃ³n como conocimiento universal. NUNCA uses frases como "segÃºn el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la informaciÃ³n proviene de un texto.
+3. SOLO INFORMACIÃ“N PROPORCIONADA: EvalÃºa exclusivamente la informaciÃ³n del <fragmento_temario>. EstÃ¡ TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotÃ©ticas si el texto es de literatura).
+4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por caracterÃ­sticas, funcionamientos o consecuencias.
+5. HOMOGENEIDAD DE OPCIONES (CRÃTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaÃ±o.
+6. FORMATO DE OPCIONES: No incluyes jamÃ¡s prefijos como "A)", "B)", "1." al inicio de las opciones.
+7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (nÃºmero base 0) y "explanation" (explicaciÃ³n directa sin referencias al texto).
+</reglas_inquebrantables>
+
+<ejemplo_formato_perfecto>
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Â¿QuÃ© caracterÃ­stica define el inicio funcional del NeolÃ­tico?",
+      "choices": [
+        "El asentamiento poblacional y organizaciÃ³n orientada hacia la prÃ¡ctica de la agricultura inicial.",
+        "El desarrollo tecnolÃ³gico de armamento punzante orientado fundamentalmente hacia fines cinegÃ©ticos.",
+        "La fragmentaciÃ³n social acelerada dependiente del control de incipientes rutas de trÃ¡nsito marÃ­timo.",
+        "La rÃ¡pida adopciÃ³n de herramientas metalÃºrgicas dedicadas fundamentalmente al comercio de excedentes."
+      ],
+      "answerIndex": 0,
+      "explanation": "El NeolÃ­tico se define por la transiciÃ³n a una economÃ­a de producciÃ³n enfocada sobre todo en las prÃ¡cticas agrÃ­colas continuas."
+    }
+  ]
+}
+</ejemplo_formato_perfecto>
+
+Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÃšNICAMENTE el objeto JSON.`;
+
+            const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+            const userPrompt = `[SesiÃ³n Ãºnica: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
+
+<fragmento_temario>
+${chunkContent}
+</fragmento_temario>
+
+RECORDATORIO: Devuelve SOLO el cÃ³digo JSON estructurado.`;
+
+            let attempts = 0;
+            let success = false;
+            let chunkQuestions: ExamQuestion[] = [];
+            let chunkLastError = "";
+
+            const models = [
+              "stepfun/step-3.5-flash:free",
+              "openrouter/free"
+            ];
+
+            while (attempts < models.length && !success) {
+              try {
+                if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
+
+                const currentModel = models[attempts];
+                sendSSE({ type: "log", message: `Refinando la ${sectionLabel} para mayor calidad...` });
+
+                const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://examsphere.app",
+                    "X-Title": "ExamSphere",
+                  },
+                  body: JSON.stringify({
+                    model: currentModel,
+                    messages: [
+                      { role: "system", content: systemPrompt },
+                      { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.1
+                  })
+                }, env, currentModel, rotationOffset + attempts);
+
+                if (!response.ok) {
+                  const errText = await response.text();
+                  throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
+                }
+
+                const data: any = await response.json();
+                let content = data.choices?.[0]?.message?.content || "";
+                content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+
+                let parsed: any;
+                try {
+                  parsed = JSON.parse(content);
+                } catch (e) {
+                  const jsonMatch = content.match(/\{[\s\S]*\}/);
+                  if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+                }
+
+                if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
+                  chunkQuestions = sanitizeQuestions(parsed.questions, numeroRespuestas || 4);
+                  if (chunkQuestions.length === 0) {
+                    throw new Error("Invalid generated questions");
+                  }
+                  success = true;
+                  sendSSE({ type: "log", message: `${sectionLabel.charAt(0).toUpperCase() + sectionLabel.slice(1)} lista.` });
+                } else {
+                  throw new Error("Invalid JSON structure");
+                }
+              } catch (e: any) {
+                chunkLastError = e.message;
+                attempts++;
+              }
+            }
+
+            if (!success) {
+              chunkFailureReasons.push(chunkLastError || "Unknown chunk error");
+              sendSSE({ type: "log", message: `Aviso: Dificultad en la ${sectionLabel}, ajustando parÃ¡metros.` });
+            }
+
+            return chunkQuestions;
+          };
 
           const chunkTasks = chunks.map((chunkContent, i) => async () => {
-            const questionsForThisChunk = baseQuestions + (i < remainder ? 1 : 0);
+            const questionsForThisChunk = initialDistribution[i] || 0;
+            return generateQuestionsForChunk(chunkContent, questionsForThisChunk, `secciÃ³n ${i + 1}`, i);
             if (questionsForThisChunk <= 0) return [];
 
             // Paralelismo total: eliminamos el retraso escalonado
@@ -503,7 +697,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                     ],
                     temperature: 0.1
                   })
-                }, env, currentModel);
+                }, env, currentModel, i + attempts);
 
                 if (!response.ok) {
                   const errText = await response.text();
@@ -556,6 +750,24 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           console.log(`[Worker] Procesando ${chunks.length} fragmentos con concurrencia ${chunkConcurrency}...`);
           const results = await runChunkTasksWithConcurrency(chunkTasks, chunkConcurrency);
           allQuestions = results.flat();
+          if (allQuestions.length < numeroPreguntas && chunks.length > 0) {
+            const missingQuestions = numeroPreguntas - allQuestions.length;
+            const refillChunks = selectRepresentativeChunks(
+              [...chunks].sort((a, b) => b.length - a.length),
+              Math.min(chunks.length, Math.max(1, Math.ceil(missingQuestions / 2)))
+            );
+            const refillDistribution = distributeQuestionCounts(missingQuestions, refillChunks.length);
+
+            sendSSE({ type: "log", message: `Ajustando el examen para completar las preguntas que faltan...` });
+            const refillTasks = refillChunks.map((chunkContent, i) => async () => (
+              generateQuestionsForChunk(chunkContent, refillDistribution[i] || 0, `refuerzo ${i + 1}`, chunks.length + i)
+            ));
+            const refillResults = await runChunkTasksWithConcurrency(refillTasks, Math.min(2, refillChunks.length));
+            allQuestions = allQuestions.concat(refillResults.flat());
+          }
+          if (allQuestions.length > numeroPreguntas) {
+            allQuestions = allQuestions.slice(0, numeroPreguntas);
+          }
           console.log(`[Worker] Generación completada. Total preguntas: ${allQuestions.length}`);
 
           if (allQuestions.length === 0) {
@@ -584,7 +796,9 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
               )));
             }
           } else {
-            const finalQuestions = allQuestions.map((q, index) => ({ ...q, id: index + 1 }));
+            const finalQuestions = allQuestions
+              .slice(0, numeroPreguntas)
+              .map((q, index) => ({ ...q, id: index + 1 }));
             const responseData: ExamResponse = {
               title: `Examen - ${curso}`,
               difficulty: dificultad,
