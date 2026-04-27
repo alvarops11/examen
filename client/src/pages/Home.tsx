@@ -1104,11 +1104,11 @@ export default function Home() {
                             key={option.score}
                             type="button"
                             onClick={() => handleFeedbackVote(option.score)}
+                            aria-label={option.label}
+                            title={option.label}
                             className="aspect-square min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-1 py-2 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 sm:aspect-auto sm:px-2 sm:py-3"
                           >
                             <div className="text-2xl leading-none sm:text-3xl">{option.emoji}</div>
-                            <div className="mt-1 text-[9px] font-bold text-slate-400 sm:hidden">{option.score}</div>
-                            <div className="mt-1.5 hidden text-[11px] font-bold uppercase tracking-wide text-slate-500 sm:block">{option.label}</div>
                           </button>
                         ))}
                       </div>
