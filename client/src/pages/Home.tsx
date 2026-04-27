@@ -48,6 +48,13 @@ const STUDY_FACTS = [
 ];
 
 const TIMER_PRESETS = [15, 30, 45, 60];
+const EXAM_FEEDBACK_OPTIONS = [
+  { score: 1, emoji: "😞", label: "Muy mala" },
+  { score: 2, emoji: "🙁", label: "Mejorable" },
+  { score: 3, emoji: "😐", label: "Aceptable" },
+  { score: 4, emoji: "🙂", label: "Buena" },
+  { score: 5, emoji: "🤩", label: "Excelente" },
+];
 
 type TimerMode = "down" | "up";
 
@@ -95,6 +102,8 @@ export default function Home() {
   const [timerSeconds, setTimerSeconds] = useState(45 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerMinimized, setTimerMinimized] = useState(false);
+  const [showFeedbackSurvey, setShowFeedbackSurvey] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
 
   // Juego de espera: Reacción
@@ -268,6 +277,8 @@ export default function Home() {
       setCalificacion(null);
       setTimerRunning(false);
       setTimerMinimized(false);
+      setShowFeedbackSurvey(false);
+      setFeedbackSubmitted(false);
       setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -303,6 +314,7 @@ export default function Home() {
     const porcentaje = Math.round((aciertos / examen.questions.length) * 100);
     setCalificacion({ aciertos, blancas, total: examen.questions.length, porcentaje });
     setCorregido(true);
+    setShowFeedbackSurvey(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (porcentaje >= 50) {
@@ -333,6 +345,8 @@ export default function Home() {
     setCalificacion(null);
     setTimerRunning(false);
     setTimerMinimized(false);
+    setShowFeedbackSurvey(false);
+    setFeedbackSubmitted(false);
     setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
   };
 
@@ -350,6 +364,18 @@ export default function Home() {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       toast.error("Error al generar el PDF");
+    }
+  };
+
+  const handleFeedbackVote = async (score: number) => {
+    try {
+      await trackEvent("exam_rating", { rating: score });
+      setFeedbackSubmitted(true);
+      setShowFeedbackSurvey(false);
+      toast.success("Gracias por valorar la calidad del examen");
+    } catch (error) {
+      console.error("Error tracking rating:", error);
+      toast.error("No se pudo registrar la valoración");
     }
   };
 
@@ -1044,6 +1070,51 @@ export default function Home() {
                   </Button>
                 )}
               </motion.div>
+
+              <AnimatePresence>
+                {corregido && showFeedbackSurvey && !feedbackSubmitted && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-2xl"
+                  >
+                    <div className="rounded-[2rem] border border-indigo-100 bg-white/95 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-6 md:p-7">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">Tu opinión</p>
+                          <h3 className="mt-2 text-2xl font-bold text-slate-900">¿Qué te ha parecido la calidad del examen?</h3>
+                          <p className="mt-2 text-sm text-slate-500">Puedes valorarlo en un segundo o cerrar este mensaje si prefieres hacerlo más tarde.</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setShowFeedbackSurvey(false)}
+                          className="rounded-full text-slate-400 hover:text-slate-700"
+                          aria-label="Cerrar encuesta"
+                        >
+                          <XCircle className="w-5 h-5" />
+                        </Button>
+                      </div>
+
+                      <div className="mt-6 grid grid-cols-5 gap-2 md:gap-3">
+                        {EXAM_FEEDBACK_OPTIONS.map((option) => (
+                          <button
+                            key={option.score}
+                            type="button"
+                            onClick={() => handleFeedbackVote(option.score)}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 px-2 py-4 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-1"
+                          >
+                            <div className="text-3xl md:text-4xl">{option.emoji}</div>
+                            <div className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">{option.label}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
 
             </motion.div>

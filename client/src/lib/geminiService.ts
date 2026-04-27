@@ -185,10 +185,16 @@ export async function fetchStats(): Promise<any> {
 export async function trackEvent(event: string, metadata?: Record<string, unknown>): Promise<void> {
   const workerUrl = getBaseUrl() + "/api/track-event";
   try {
+    const profile = getVisitorProfile();
     await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event, ...metadata }),
+      body: JSON.stringify({
+        event,
+        visitorType: profile.visitorType,
+        visitorId: profile.visitorId,
+        ...metadata,
+      }),
     });
   } catch (error) {
     console.error("Error tracking event:", error);

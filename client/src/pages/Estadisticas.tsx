@@ -55,6 +55,15 @@ export default function Estadisticas() {
     const returningExamTotal = stats?.examSegments?.returning?.total || 0;
     const newConversion = totalNewVisitors > 0 ? ((newExamTotal / totalNewVisitors) * 100).toFixed(1) : "0.0";
     const returningConversion = totalReturningVisitors > 0 ? ((returningExamTotal / totalReturningVisitors) * 100).toFixed(1) : "0.0";
+    const feedbackVotes = stats?.feedback?.total_votes || 0;
+    const feedbackAverage = Number(stats?.feedback?.average_rating || 0).toFixed(1);
+    const feedbackDistribution = [
+        { score: 1, emoji: "😞", votes: stats?.feedback?.ratings?.[1] || 0 },
+        { score: 2, emoji: "🙁", votes: stats?.feedback?.ratings?.[2] || 0 },
+        { score: 3, emoji: "😐", votes: stats?.feedback?.ratings?.[3] || 0 },
+        { score: 4, emoji: "🙂", votes: stats?.feedback?.ratings?.[4] || 0 },
+        { score: 5, emoji: "🤩", votes: stats?.feedback?.ratings?.[5] || 0 },
+    ];
 
     const mainStats = [
         { label: "Conversion Rate", value: `${conversionRate}%`, icon: Target, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Visitas que generan examen" },
@@ -285,6 +294,66 @@ export default function Estadisticas() {
                         ))}
                     </div>
                 </motion.div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"
+                    >
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-indigo-600" />
+                            Valoración de los exámenes
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-3xl bg-indigo-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-indigo-500">Media</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{feedbackAverage}</div>
+                                <div className="mt-2 text-sm text-slate-500">Sobre 5 puntos</div>
+                            </div>
+                            <div className="rounded-3xl bg-slate-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Votos</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{feedbackVotes}</div>
+                                <div className="mt-2 text-sm text-slate-500">Valoraciones recibidas</div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"
+                    >
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-indigo-600" />
+                            Reparto de valoraciones
+                        </h3>
+                        <div className="space-y-4">
+                            {feedbackDistribution.map((item) => {
+                                const percentage = feedbackVotes > 0 ? (item.votes / feedbackVotes) * 100 : 0;
+                                return (
+                                    <div key={item.score}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{item.emoji}</span>
+                                                <span className="text-sm font-bold text-slate-700">{item.score}/5</span>
+                                            </div>
+                                            <span className="text-sm font-black text-indigo-600">{item.votes}</span>
+                                        </div>
+                                        <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${percentage}%` }}
+                                                transition={{ duration: 0.9 }}
+                                                className="h-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                     {/* Difficulty Pie Chart */}

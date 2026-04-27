@@ -410,6 +410,18 @@ export default {
         events: {
           pdf_normal: parseInt(await env.STATS_KV.get(`event:pdf_normal`) || "0"),
           pdf_corrected: parseInt(await env.STATS_KV.get(`event:pdf_corrected`) || "0"),
+          exam_rating: parseInt(await env.STATS_KV.get(`event:exam_rating`) || "0"),
+        },
+        feedback: {
+          total_votes: parseInt(await env.STATS_KV.get(`rating:count`) || "0"),
+          average_rating: parseFloat(await env.STATS_KV.get(`rating:avg`) || "0"),
+          ratings: {
+            1: parseInt(await env.STATS_KV.get(`rating:value:1`) || "0"),
+            2: parseInt(await env.STATS_KV.get(`rating:value:2`) || "0"),
+            3: parseInt(await env.STATS_KV.get(`rating:value:3`) || "0"),
+            4: parseInt(await env.STATS_KV.get(`rating:value:4`) || "0"),
+            5: parseInt(await env.STATS_KV.get(`rating:value:5`) || "0"),
+          }
         }
       };
 
@@ -437,15 +449,26 @@ export default {
 
     // Track Event Endpoint (POST /api/track-event)
     if (url.pathname === "/api/track-event" && request.method === "POST") {
-      const { event, visitorType } = await request.json() as {
+      const { event, visitorType, rating } = await request.json() as {
         event: string;
         visitorType?: "new" | "returning";
+        rating?: number;
       };
       if (event) {
         ctx.waitUntil((async () => {
           await incrementStat(env.STATS_KV, `event:${event}`);
           if (visitorType === "new" || visitorType === "returning") {
             await incrementStat(env.STATS_KV, `event:${event}:${visitorType}`);
+          }
+          if (event === "exam_rating" && Number.isInteger(rating) && rating! >= 1 && rating! <= 5) {
+            await incrementStat(env.STATS_KV, `rating:value:${rating}`);
+            const currentCount = parseInt(await env.STATS_KV.get(`rating:count`) || "0");
+            const currentSum = parseInt(await env.STATS_KV.get(`rating:sum`) || "0");
+            const nextCount = currentCount + 1;
+            const nextSum = currentSum + rating!;
+            await env.STATS_KV.put(`rating:count`, nextCount.toString());
+            await env.STATS_KV.put(`rating:sum`, nextSum.toString());
+            await env.STATS_KV.put(`rating:avg`, (nextSum / nextCount).toFixed(2));
           }
         })());
       }
