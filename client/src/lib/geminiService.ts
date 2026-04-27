@@ -20,6 +20,89 @@ interface ExamErrorEvent {
   retryable?: boolean;
 }
 
+type VisitorType = "new" | "returning";
+
+interface VisitorProfile {
+  visitorId: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  visitCount: number;
+  activeDays: number;
+  lastVisitDay: string | null;
+  visitorType: VisitorType;
+}
+
+const VISITOR_ID_KEY = "visitor_id";
+const VISITOR_FIRST_SEEN_KEY = "visitor_first_seen_at";
+const VISITOR_LAST_SEEN_KEY = "visitor_last_seen_at";
+const VISITOR_VISIT_COUNT_KEY = "visitor_visit_count";
+const VISITOR_ACTIVE_DAYS_KEY = "visitor_active_days";
+const VISITOR_LAST_DAY_KEY = "last_visit";
+
+function createVisitorId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `visitor_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getTodayIsoDate(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getVisitorProfile(): VisitorProfile {
+  const nowIso = new Date().toISOString();
+  const today = getTodayIsoDate();
+
+  const existingVisitorId = localStorage.getItem(VISITOR_ID_KEY);
+  const isFirstSeen = !existingVisitorId;
+  const visitorId = existingVisitorId || createVisitorId();
+  const firstSeenAt = localStorage.getItem(VISITOR_FIRST_SEEN_KEY) || nowIso;
+  const lastSeenAt = localStorage.getItem(VISITOR_LAST_SEEN_KEY) || nowIso;
+  const lastVisitDay = localStorage.getItem(VISITOR_LAST_DAY_KEY);
+  const previousVisitCount = parseInt(localStorage.getItem(VISITOR_VISIT_COUNT_KEY) || "0", 10) || 0;
+  const previousActiveDays = parseInt(localStorage.getItem(VISITOR_ACTIVE_DAYS_KEY) || "0", 10) || 0;
+
+  if (isFirstSeen) {
+    localStorage.setItem(VISITOR_ID_KEY, visitorId);
+    localStorage.setItem(VISITOR_FIRST_SEEN_KEY, firstSeenAt);
+  }
+
+  return {
+    visitorId,
+    firstSeenAt,
+    lastSeenAt,
+    visitCount: previousVisitCount,
+    activeDays: previousActiveDays,
+    lastVisitDay,
+    visitorType: isFirstSeen ? "new" : "returning",
+  };
+}
+
+function persistVisitorVisit(profile: VisitorProfile): VisitorProfile {
+  const nowIso = new Date().toISOString();
+  const today = getTodayIsoDate();
+  const isNewDayVisit = profile.lastVisitDay !== today;
+  const nextVisitCount = profile.visitCount + (isNewDayVisit ? 1 : 0);
+  const nextActiveDays = profile.activeDays + (isNewDayVisit ? 1 : 0);
+
+  localStorage.setItem(VISITOR_ID_KEY, profile.visitorId);
+  localStorage.setItem(VISITOR_FIRST_SEEN_KEY, profile.firstSeenAt);
+  localStorage.setItem(VISITOR_LAST_SEEN_KEY, nowIso);
+  localStorage.setItem(VISITOR_VISIT_COUNT_KEY, String(nextVisitCount));
+  localStorage.setItem(VISITOR_ACTIVE_DAYS_KEY, String(nextActiveDays));
+  localStorage.setItem(VISITOR_LAST_DAY_KEY, today);
+
+  return {
+    ...profile,
+    lastSeenAt: nowIso,
+    lastVisitDay: today,
+    visitCount: nextVisitCount,
+    activeDays: nextActiveDays,
+  };
+}
+
 class ExamGenerationError extends Error {
   code?: string;
   retryable: boolean;
@@ -58,17 +141,24 @@ function getDefaultUserMessage(code?: string): string {
 export async function trackVisit(): Promise<void> {
   const workerUrl = getBaseUrl() + "/api/track-visit";
   try {
-    const lastVisit = localStorage.getItem("last_visit");
-    const today = new Date().toISOString().split("T")[0];
-
-    if (lastVisit === today) return;
+    const profile = getVisitorProfile();
+    const today = getTodayIsoDate();
+    const isNewDayVisit = profile.lastVisitDay !== today;
+    if (!isNewDayVisit) return;
 
     await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorId: profile.visitorId,
+        visitorType: profile.visitorType,
+        isNewVisitor: profile.visitorType === "new",
+        visitCount: profile.visitCount + 1,
+        activeDays: profile.activeDays + 1,
+      }),
     });
 
-    localStorage.setItem("last_visit", today);
+    persistVisitorVisit(profile);
   } catch (error) {
     console.error("Error tracking visit:", error);
   }
@@ -92,13 +182,13 @@ export async function fetchStats(): Promise<any> {
 /**
  * Registra un evento personalizado en el servidor
  */
-export async function trackEvent(event: string): Promise<void> {
+export async function trackEvent(event: string, metadata?: Record<string, unknown>): Promise<void> {
   const workerUrl = getBaseUrl() + "/api/track-event";
   try {
     await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event }),
+      body: JSON.stringify({ event, ...metadata }),
     });
   } catch (error) {
     console.error("Error tracking event:", error);
@@ -117,12 +207,21 @@ export async function generateExamWithOpenRouter(
   onProgress?: (message: string) => void
 ): Promise<ExamResponse> {
   const workerUrl = getBaseUrl() + "/api/generate";
+  const visitorProfile = getVisitorProfile();
 
   try {
     const response = await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ curso, dificultad, numeroPreguntas, numeroRespuestas, temario }),
+      body: JSON.stringify({
+        curso,
+        dificultad,
+        numeroPreguntas,
+        numeroRespuestas,
+        temario,
+        visitorType: visitorProfile.visitorType,
+        visitorId: visitorProfile.visitorId,
+      }),
     });
 
     if (!response.ok) {

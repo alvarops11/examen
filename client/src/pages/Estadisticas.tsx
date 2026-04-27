@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area } from 'recharts';
-import { Users, BookOpen, Calendar, TrendingUp, Sparkles, Loader2, Clock, Target, FileDown, Brain, Zap } from "lucide-react";
+import { Users, BookOpen, Calendar, TrendingUp, Sparkles, Loader2, Clock, Target, FileDown, Brain, Zap, UserPlus, Repeat2, BarChart3, UserCheck } from "lucide-react";
 
 export default function Estadisticas() {
     const [stats, setStats] = useState<any>(null);
@@ -44,12 +44,35 @@ export default function Estadisticas() {
 
     const totalQuestions = stats?.technical?.total_questions || 0;
     const avgQuestions = totalExamenes > 0 ? (totalQuestions / totalExamenes).toFixed(1) : "0";
+    const uniqueVisitors = stats?.audience?.unique_total || 0;
+    const totalNewVisitors = stats?.audience?.new?.total || 0;
+    const totalReturningVisitors = stats?.audience?.returning?.total || 0;
+    const todayNewVisitors = stats?.audience?.new?.today || 0;
+    const todayReturningVisitors = stats?.audience?.returning?.today || 0;
+    const visitsPerBrowser = uniqueVisitors > 0 ? (totalVisitas / uniqueVisitors).toFixed(1) : "0.0";
+    const returnRate = uniqueVisitors > 0 ? ((totalReturningVisitors / uniqueVisitors) * 100).toFixed(1) : "0.0";
+    const newExamTotal = stats?.examSegments?.new?.total || 0;
+    const returningExamTotal = stats?.examSegments?.returning?.total || 0;
+    const newConversion = totalNewVisitors > 0 ? ((newExamTotal / totalNewVisitors) * 100).toFixed(1) : "0.0";
+    const returningConversion = totalReturningVisitors > 0 ? ((returningExamTotal / totalReturningVisitors) * 100).toFixed(1) : "0.0";
 
     const mainStats = [
         { label: "Conversion Rate", value: `${conversionRate}%`, icon: Target, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Visitas que generan examen" },
         { label: "Tiempo Medio", value: `${avgGenTime}s`, icon: Clock, color: "text-amber-600", bg: "bg-amber-50", desc: "Velocidad de respuesta IA" },
         { label: "Media Preguntas", value: avgQuestions, icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", desc: "Longitud media de exámenes" },
         { label: "Total Exámenes", value: totalExamenes.toLocaleString(), icon: Sparkles, color: "text-purple-600", bg: "bg-purple-50", desc: "Generados históricamente" },
+    ];
+
+    const audienceStats = [
+        { label: "Usuarios nuevos", value: totalNewVisitors.toLocaleString(), icon: UserPlus, color: "text-sky-600", bg: "bg-sky-50", desc: `${todayNewVisitors} hoy` },
+        { label: "Visitas recurrentes", value: totalReturningVisitors.toLocaleString(), icon: Repeat2, color: "text-violet-600", bg: "bg-violet-50", desc: `${todayReturningVisitors} hoy` },
+        { label: "Navegadores únicos", value: uniqueVisitors.toLocaleString(), icon: Users, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Identificados con localStorage" },
+        { label: "Frecuencia de retorno", value: `${returnRate}%`, icon: UserCheck, color: "text-amber-600", bg: "bg-amber-50", desc: `${visitsPerBrowser} visitas por navegador` },
+    ];
+
+    const conversionByAudience = [
+        { name: "Nuevas", visitors: totalNewVisitors, exams: newExamTotal, conversion: newConversion, color: "bg-sky-500" },
+        { name: "Recurrentes", visitors: totalReturningVisitors, exams: returningExamTotal, conversion: returningConversion, color: "bg-violet-500" },
     ];
 
     const timeStats = [
@@ -149,6 +172,38 @@ export default function Estadisticas() {
                     ))}
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    {audienceStats.map((stat, i) => (
+                        <motion.div
+                            key={stat.label}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15 + (i * 0.08) }}
+                        >
+                            <Card className="p-6 border-none shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-xl transition-all duration-300 group">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                                        <stat.icon className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-400">{stat.label}</p>
+                                        <p className="text-2xl font-black text-slate-900">{stat.value}</p>
+                                    </div>
+                                </div>
+                                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: "100%" }}
+                                        transition={{ duration: 1, delay: 0.7 + (i * 0.08) }}
+                                        className={`h-full ${stat.color.replace('text-', 'bg-')}`}
+                                    />
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">{stat.desc}</p>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+
                 {/* Time-based Metrics Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                     {timeStats.map((section, idx) => (
@@ -186,6 +241,50 @@ export default function Estadisticas() {
                         </motion.div>
                     ))}
                 </div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-12"
+                >
+                    <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-indigo-600" />
+                        Conversión por tipo de visita
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {conversionByAudience.map((segment) => (
+                            <div key={segment.name} className="rounded-3xl bg-slate-50 p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <div className="text-xs font-bold uppercase tracking-widest text-slate-400">{segment.name}</div>
+                                        <div className="text-3xl font-black text-slate-900 mt-1">{segment.conversion}%</div>
+                                    </div>
+                                    <div className={`h-12 w-12 rounded-2xl ${segment.color} text-white flex items-center justify-center shadow-lg`}>
+                                        <Target className="w-5 h-5" />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-500">Visitantes del segmento</span>
+                                        <span className="font-bold text-slate-900">{segment.visitors.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-slate-500">Exámenes generados</span>
+                                        <span className="font-bold text-slate-900">{segment.exams.toLocaleString()}</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-white rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.min(Number(segment.conversion), 100)}%` }}
+                                            transition={{ duration: 1 }}
+                                            className={`h-full ${segment.color}`}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </motion.div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                     {/* Difficulty Pie Chart */}

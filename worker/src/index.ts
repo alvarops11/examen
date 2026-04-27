@@ -1,4 +1,4 @@
-
+﻿
 export interface Env {
   OPENROUTER_API_KEY: string;
   OPENROUTER_API_KEY_BACKUP_1?: string;
@@ -27,6 +27,8 @@ interface GenerateRequest {
   numeroPreguntas: number;
   numeroRespuestas: number;
   temario: string;
+  visitorType?: "new" | "returning";
+  visitorId?: string;
 }
 
 type ErrorCode =
@@ -73,7 +75,7 @@ function toErrorEvent(error: unknown) {
   };
 }
 
-// Helper para dividir el texto en chunks sin cortar párrafos
+// Helper para dividir el texto en chunks sin cortar pÃ¡rrafos
 function splitOversizedBlock(block: string, maxChunkSize: number): string[] {
   const normalized = block.trim();
   if (!normalized) return [];
@@ -111,7 +113,7 @@ function splitText(text: string, maxChunkSize = 8000): string[] {
 
   const chunks: string[] = [];
   let currentChunk = "";
-  // Dividir por párrafos dobles o saltos de línea para conservar contexto
+  // Dividir por pÃ¡rrafos dobles o saltos de lÃ­nea para conservar contexto
   const paragraphs = text
     .split(/\n\n+/)
     .flatMap((paragraph) => splitOversizedBlock(paragraph, maxChunkSize))
@@ -287,11 +289,11 @@ async function fetchWithFailover(
         });
 
         if (response.ok || (response.status >= 400 && response.status < 500 && ![401, 403, 429].includes(response.status))) {
-          if (response.ok) console.log(`[Worker] Éxito con modelo ${modelName} y Key ${i + 1}.`);
+          if (response.ok) console.log(`[Worker] Ã‰xito con modelo ${modelName} y Key ${i + 1}.`);
           return response;
         }
 
-        console.warn(`[Worker] API Key ${i + 1} falló con status ${response.status}.`);
+        console.warn(`[Worker] API Key ${i + 1} fallÃ³ con status ${response.status}.`);
         lastErrorMsg = `HTTP ${response.status} ${response.statusText}`;
         lastStatus = response.status;
         if (response.status === 429) {
@@ -321,15 +323,15 @@ async function fetchWithFailover(
   if ((lastStatus === 429 || lastErrorMsg.includes("Rate limit")) && sawRateLimit && !sawOtherFailure) {
     throw new WorkerAppError(
       "RATE_LIMIT",
-      `Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`,
-      "Ahora mismo se están generando demasiados exámenes. Vuelve a intentarlo en un momento.",
+      `Todas las API keys fallaron para ${modelName}. RazÃ³n: ${lastErrorMsg}`,
+      "Ahora mismo se estÃ¡n generando demasiados exÃ¡menes. Vuelve a intentarlo en un momento.",
       true
     );
   }
 
   throw new WorkerAppError(
     "UPSTREAM_UNAVAILABLE",
-    `Todas las API keys fallaron para ${modelName}. Razón: ${lastErrorMsg}`,
+    `Todas las API keys fallaron para ${modelName}. RazÃ³n: ${lastErrorMsg}`,
     "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
     true
   );
@@ -359,10 +361,35 @@ export default {
           month: parseInt(await env.STATS_KV.get(`v:${thisMonth}`) || "0"),
           total: parseInt(await env.STATS_KV.get(`v:all`) || "0"),
         },
+        audience: {
+          unique_total: parseInt(await env.STATS_KV.get(`vn:new:all`) || "0"),
+          new: {
+            today: parseInt(await env.STATS_KV.get(`vn:new:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`vn:new:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`vn:new:all`) || "0"),
+          },
+          returning: {
+            today: parseInt(await env.STATS_KV.get(`vn:returning:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`vn:returning:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`vn:returning:all`) || "0"),
+          },
+        },
         exams: {
           today: parseInt(await env.STATS_KV.get(`e:${today}`) || "0"),
           month: parseInt(await env.STATS_KV.get(`e:${thisMonth}`) || "0"),
           total: parseInt(await env.STATS_KV.get(`e:all`) || "0"),
+        },
+        examSegments: {
+          new: {
+            today: parseInt(await env.STATS_KV.get(`es:new:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`es:new:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`es:new:all`) || "0"),
+          },
+          returning: {
+            today: parseInt(await env.STATS_KV.get(`es:returning:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`es:returning:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`es:returning:all`) || "0"),
+          },
         },
         difficulties: {
           facil: parseInt(await env.STATS_KV.get(`diff:facil`) || "0"),
@@ -370,11 +397,11 @@ export default {
           dificil: parseInt(await env.STATS_KV.get(`diff:dificil`) || "0"),
         },
         courses: {
-          "1º": parseInt(await env.STATS_KV.get(`course:1º`) || "0"),
-          "2º": parseInt(await env.STATS_KV.get(`course:2º`) || "0"),
-          "3º": parseInt(await env.STATS_KV.get(`course:3º`) || "0"),
-          "4º": parseInt(await env.STATS_KV.get(`course:4º`) || "0"),
-          "Máster": parseInt(await env.STATS_KV.get(`course:Máster`) || "0"),
+          "1Âº": parseInt(await env.STATS_KV.get(`course:1Âº`) || "0"),
+          "2Âº": parseInt(await env.STATS_KV.get(`course:2Âº`) || "0"),
+          "3Âº": parseInt(await env.STATS_KV.get(`course:3Âº`) || "0"),
+          "4Âº": parseInt(await env.STATS_KV.get(`course:4Âº`) || "0"),
+          "MÃ¡ster": parseInt(await env.STATS_KV.get(`course:MÃ¡ster`) || "0"),
         },
         technical: {
           total_questions: parseInt(await env.STATS_KV.get(`stats:total_questions`) || "0"),
@@ -393,7 +420,16 @@ export default {
 
     // Track Visit Endpoint (POST /api/track-visit)
     if (url.pathname === "/api/track-visit" && request.method === "POST") {
-      ctx.waitUntil(incrementStatDaily(env.STATS_KV, 'v'));
+      const { visitorType } = await request.json().catch(() => ({ visitorType: undefined })) as {
+        visitorType?: "new" | "returning";
+      };
+
+      ctx.waitUntil((async () => {
+        await incrementStatDaily(env.STATS_KV, 'v');
+        if (visitorType === "new" || visitorType === "returning") {
+          await incrementStatDaily(env.STATS_KV, `vn:${visitorType}`);
+        }
+      })());
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
@@ -401,9 +437,17 @@ export default {
 
     // Track Event Endpoint (POST /api/track-event)
     if (url.pathname === "/api/track-event" && request.method === "POST") {
-      const { event } = await request.json() as { event: string };
+      const { event, visitorType } = await request.json() as {
+        event: string;
+        visitorType?: "new" | "returning";
+      };
       if (event) {
-        ctx.waitUntil(incrementStat(env.STATS_KV, `event:${event}`));
+        ctx.waitUntil((async () => {
+          await incrementStat(env.STATS_KV, `event:${event}`);
+          if (visitorType === "new" || visitorType === "returning") {
+            await incrementStat(env.STATS_KV, `event:${event}:${visitorType}`);
+          }
+        })());
       }
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json", ...corsHeaders() },
@@ -439,13 +483,13 @@ export default {
           }
 
           const body = await request.json() as GenerateRequest;
-          const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario } = body;
+          const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario, visitorType } = body;
 
           if (!temario || !temario.trim()) {
             sendSSE(toErrorEvent(new WorkerAppError(
               "EMPTY_CONTENT",
               "Temario requerido",
-              "Añade contenido antes de generar el examen."
+              "AÃ±ade contenido antes de generar el examen."
             )));
             controller.close();
             return;
@@ -455,16 +499,16 @@ export default {
             sendSSE(toErrorEvent(new WorkerAppError(
               "CONTENT_TOO_SHORT",
               "Temario demasiado breve",
-              "El contenido parece demasiado breve para crear un examen útil. Añade más apuntes o un fragmento más completo."
+              "El contenido parece demasiado breve para crear un examen Ãºtil. AÃ±ade mÃ¡s apuntes o un fragmento mÃ¡s completo."
             )));
             controller.close();
             return;
           }
 
           const dificultadMap: Record<string, string> = {
-            facil: "básicos y conceptos fundamentales",
-            media: "comprensión, aplicación y análisis de conceptos",
-            dificil: "análisis profundo, síntesis y pensamiento crítico a nivel universitario",
+            facil: "bÃ¡sicos y conceptos fundamentales",
+            media: "comprensiÃ³n, aplicaciÃ³n y anÃ¡lisis de conceptos",
+            dificil: "anÃ¡lisis profundo, sÃ­ntesis y pensamiento crÃ­tico a nivel universitario",
           };
 
           sendSSE({ type: "log", message: `Preparando tu examen de nivel ${dificultad}...` });
@@ -476,7 +520,7 @@ export default {
             : selectRepresentativeChunks(allChunks, 12);
           const chunkConcurrency = useCompactMode ? 2 : (chunks.length >= 8 ? 2 : 3);
           if (useCompactMode) {
-            sendSSE({ type: "log", message: `Documento extenso detectado: se ha optimizado el análisis para evitar bloqueos.` });
+            sendSSE({ type: "log", message: `Documento extenso detectado: se ha optimizado el anÃ¡lisis para evitar bloqueos.` });
           }
           sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
 
@@ -495,16 +539,16 @@ export default {
 
             sendSSE({ type: "log", message: `Extrayendo preguntas de la ${sectionLabel}...` });
 
-            const systemPrompt = `Eres un profesor universitario experto en evaluaciÃ³n. Tu objetivo es generar preguntas de opciÃ³n mÃºltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
-          
+            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
+
 <reglas_inquebrantables>
-1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÃ‘OL. Traduce conceptos si estÃ¡n en inglÃ©s.
-2. CERO META-LENGUAJE: Trata la informaciÃ³n como conocimiento universal. NUNCA uses frases como "segÃºn el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la informaciÃ³n proviene de un texto.
-3. SOLO INFORMACIÃ“N PROPORCIONADA: EvalÃºa exclusivamente la informaciÃ³n del <fragmento_temario>. EstÃ¡ TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotÃ©ticas si el texto es de literatura).
-4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por caracterÃ­sticas, funcionamientos o consecuencias.
-5. HOMOGENEIDAD DE OPCIONES (CRÃTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaÃ±o.
-6. FORMATO DE OPCIONES: No incluyes jamÃ¡s prefijos como "A)", "B)", "1." al inicio de las opciones.
-7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (nÃºmero base 0) y "explanation" (explicaciÃ³n directa sin referencias al texto).
+1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÑOL. Traduce conceptos si están en inglés.
+2. CERO META-LENGUAJE: Trata la información como conocimiento universal. NUNCA uses frases como "según el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la información proviene de un texto.
+3. SOLO INFORMACIÓN PROPORCIONADA: Evalúa exclusivamente la información del <fragmento_temario>. Está TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotéticas si el texto es de literatura).
+4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por características, funcionamientos o consecuencias.
+5. HOMOGENEIDAD DE OPCIONES (CRÍTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaño.
+6. FORMATO DE OPCIONES: No incluyes jamás prefijos como "A)", "B)", "1." al inicio de las opciones.
+7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (número base 0) y "explanation" (explicación directa sin referencias al texto).
 </reglas_inquebrantables>
 
 <ejemplo_formato_perfecto>
@@ -512,30 +556,30 @@ export default {
   "questions": [
     {
       "id": 1,
-      "question": "Â¿QuÃ© caracterÃ­stica define el inicio funcional del NeolÃ­tico?",
+      "question": "¿Qué característica define el inicio funcional del Neolítico?",
       "choices": [
-        "El asentamiento poblacional y organizaciÃ³n orientada hacia la prÃ¡ctica de la agricultura inicial.",
-        "El desarrollo tecnolÃ³gico de armamento punzante orientado fundamentalmente hacia fines cinegÃ©ticos.",
-        "La fragmentaciÃ³n social acelerada dependiente del control de incipientes rutas de trÃ¡nsito marÃ­timo.",
-        "La rÃ¡pida adopciÃ³n de herramientas metalÃºrgicas dedicadas fundamentalmente al comercio de excedentes."
+        "El asentamiento poblacional y organización orientada hacia la práctica de la agricultura inicial.",
+        "El desarrollo tecnológico de armamento punzante orientado fundamentalmente hacia fines cinegéticos.",
+        "La fragmentación social acelerada dependiente del control de incipientes rutas de tránsito marítimo.",
+        "La rápida adopción de herramientas metalúrgicas dedicadas fundamentalmente al comercio de excedentes."
       ],
       "answerIndex": 0,
-      "explanation": "El NeolÃ­tico se define por la transiciÃ³n a una economÃ­a de producciÃ³n enfocada sobre todo en las prÃ¡cticas agrÃ­colas continuas."
+      "explanation": "El Neolítico se define por la transición a una economía de producción enfocada sobre todo en las prácticas agrícolas continuas."
     }
   ]
 }
 </ejemplo_formato_perfecto>
 
-Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÃšNICAMENTE el objeto JSON.`;
+Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
 
             const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-            const userPrompt = `[SesiÃ³n Ãºnica: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
+            const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
 
 <fragmento_temario>
 ${chunkContent}
 </fragmento_temario>
 
-RECORDATORIO: Devuelve SOLO el cÃ³digo JSON estructurado.`;
+RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
 
             let attempts = 0;
             let success = false;
@@ -543,7 +587,8 @@ RECORDATORIO: Devuelve SOLO el cÃ³digo JSON estructurado.`;
             let chunkLastError = "";
 
             const models = [
-              "stepfun/step-3.5-flash:free",
+              "google/gemma-3-12b-it:free",
+              "qwen/qwen3.6-plus:free",
               "openrouter/free"
             ];
 
@@ -606,7 +651,7 @@ RECORDATORIO: Devuelve SOLO el cÃ³digo JSON estructurado.`;
 
             if (!success) {
               chunkFailureReasons.push(chunkLastError || "Unknown chunk error");
-              sendSSE({ type: "log", message: `Aviso: Dificultad en la ${sectionLabel}, ajustando parÃ¡metros.` });
+              sendSSE({ type: "log", message: `Aviso: Dificultad en la ${sectionLabel}, ajustando parámetros.` });
             }
 
             return chunkQuestions;
@@ -614,137 +659,7 @@ RECORDATORIO: Devuelve SOLO el cÃ³digo JSON estructurado.`;
 
           const chunkTasks = chunks.map((chunkContent, i) => async () => {
             const questionsForThisChunk = initialDistribution[i] || 0;
-            return generateQuestionsForChunk(chunkContent, questionsForThisChunk, `secciÃ³n ${i + 1}`, i);
-            if (questionsForThisChunk <= 0) return [];
-
-            // Paralelismo total: eliminamos el retraso escalonado
-            sendSSE({ type: "log", message: `Extrayendo preguntas de la sección ${i + 1}...` });
-
-            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
-
-<reglas_inquebrantables>
-1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÑOL. Traduce conceptos si están en inglés.
-2. CERO META-LENGUAJE: Trata la información como conocimiento universal. NUNCA uses frases como "según el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la información proviene de un texto.
-3. SOLO INFORMACIÓN PROPORCIONADA: Evalúa exclusivamente la información del <fragmento_temario>. Está TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotéticas si el texto es de literatura).
-4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por características, funcionamientos o consecuencias.
-5. HOMOGENEIDAD DE OPCIONES (CRÍTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaño.
-6. FORMATO DE OPCIONES: No incluyes jamás prefijos como "A)", "B)", "1." al inicio de las opciones.
-7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (número base 0) y "explanation" (explicación directa sin referencias al texto).
-</reglas_inquebrantables>
-
-<ejemplo_formato_perfecto>
-{
-  "questions": [
-    {
-      "id": 1,
-      "question": "¿Qué característica define el inicio funcional del Neolítico?",
-      "choices": [
-        "El asentamiento poblacional y organización orientada hacia la práctica de la agricultura inicial.",
-        "El desarrollo tecnológico de armamento punzante orientado fundamentalmente hacia fines cinegéticos.",
-        "La fragmentación social acelerada dependiente del control de incipientes rutas de tránsito marítimo.",
-        "La rápida adopción de herramientas metalúrgicas dedicadas fundamentalmente al comercio de excedentes."
-      ],
-      "answerIndex": 0,
-      "explanation": "El Neolítico se define por la transición a una economía de producción enfocada sobre todo en las prácticas agrícolas continuas."
-    }
-  ]
-}
-</ejemplo_formato_perfecto>
-
-Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
-
-            const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
-            const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
-
-<fragmento_temario>
-${chunkContent}
-</fragmento_temario>
-
-RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
-
-            let attempts = 0;
-            let success = false;
-            let chunkQuestions: ExamQuestion[] = [];
-            let chunkLastError = "";
-
-            // ESTRATEGIA DE FALLOVER ROBUSTA (V5): Siguiendo la secuencia exacta del usuario
-            const models = [
-              "stepfun/step-3.5-flash:free",
-              "openrouter/free"
-            ];
-
-            while (attempts < models.length && !success) {
-              try {
-                if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
-
-                const currentModel = models[attempts];
-
-                // LOG AL NAVEGADOR
-                sendSSE({ type: "log", message: `Refinando sección ${i + 1} para mayor calidad...` });
-
-                const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://examsphere.app",
-                    "X-Title": "ExamSphere",
-                  },
-                  body: JSON.stringify({
-                    model: currentModel,
-                    messages: [
-                      { role: "system", content: systemPrompt },
-                      { role: "user", content: userPrompt }
-                    ],
-                    temperature: 0.1
-                  })
-                }, env, currentModel, i + attempts);
-
-                if (!response.ok) {
-                  const errText = await response.text();
-                  throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
-                }
-
-                const data: any = await response.json();
-                let content = data.choices?.[0]?.message?.content || "";
-                content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-
-                let parsed: any;
-                try {
-                  parsed = JSON.parse(content);
-                } catch (e) {
-                  const jsonMatch = content.match(/\{[\s\S]*\}/);
-                  if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-                }
-
-                if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
-                  chunkQuestions = parsed.questions.map((q: any) => {
-                    const choices = [...q.choices];
-                    const correctChoice = choices[q.answerIndex];
-                    for (let j = choices.length - 1; j > 0; j--) {
-                      const k = Math.floor(Math.random() * (j + 1));
-                      [choices[j], choices[k]] = [choices[k], choices[j]];
-                    }
-                    return {
-                      ...q,
-                      choices,
-                      answerIndex: choices.indexOf(correctChoice) === -1 ? 0 : choices.indexOf(correctChoice)
-                    };
-                  });
-                  success = true;
-                  sendSSE({ type: "log", message: `Sección ${i + 1} lista.` });
-                } else {
-                  throw new Error("Invalid JSON structure");
-                }
-              } catch (e: any) {
-                chunkLastError = e.message;
-                attempts++;
-              }
-            }
-            if (!success) {
-              chunkFailureReasons.push(chunkLastError || "Unknown chunk error");
-              sendSSE({ type: "log", message: `Aviso: Dificultad en sección ${i + 1}, ajustando parámetros.` });
-            }
-            return chunkQuestions;
+            return generateQuestionsForChunk(chunkContent, questionsForThisChunk, `sección ${i + 1}`, i);
           });
 
           console.log(`[Worker] Procesando ${chunks.length} fragmentos con concurrencia ${chunkConcurrency}...`);
@@ -768,23 +683,23 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           if (allQuestions.length > numeroPreguntas) {
             allQuestions = allQuestions.slice(0, numeroPreguntas);
           }
-          console.log(`[Worker] Generación completada. Total preguntas: ${allQuestions.length}`);
+          console.log(`[Worker] GeneraciÃ³n completada. Total preguntas: ${allQuestions.length}`);
 
           if (allQuestions.length === 0) {
-            console.error("[Worker] Error: No se generó ninguna pregunta.");
+            console.error("[Worker] Error: No se generÃ³ ninguna pregunta.");
             const failureText = chunkFailureReasons.join(" | ");
             if (failureText.includes("Rate limit")) {
               sendSSE(toErrorEvent(new WorkerAppError(
                 "RATE_LIMIT",
                 failureText,
-                "Ahora mismo se están generando demasiados exámenes. Vuelve a intentarlo en un momento.",
+                "Ahora mismo se estÃ¡n generando demasiados exÃ¡menes. Vuelve a intentarlo en un momento.",
                 true
               )));
             } else if (failureText.includes("Invalid JSON structure") || failureText.includes("OpenRouter error")) {
               sendSSE(toErrorEvent(new WorkerAppError(
                 "DOCUMENT_PROCESSING_FAILED",
-                failureText || "No se pudieron generar preguntas válidas.",
-                "No hemos podido aprovechar bien el contenido del documento. Prueba con otro fragmento o con unos apuntes más claros.",
+                failureText || "No se pudieron generar preguntas vÃ¡lidas.",
+                "No hemos podido aprovechar bien el contenido del documento. Prueba con otro fragmento o con unos apuntes mÃ¡s claros.",
                 true
               )));
             } else {
@@ -813,6 +728,9 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             const duration = Date.now() - startTime;
             ctx.waitUntil((async () => {
               await incrementStatDaily(env.STATS_KV, 'e');
+              if (visitorType === "new" || visitorType === "returning") {
+                await incrementStatDaily(env.STATS_KV, `es:${visitorType}`);
+              }
               await incrementStat(env.STATS_KV, `diff:${dificultad}`);
               await incrementStat(env.STATS_KV, `course:${curso}`);
               await incrementStat(env.STATS_KV, `stats:total_questions`, allQuestions.length);
@@ -837,3 +755,5 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
     });
   },
 };
+
+
