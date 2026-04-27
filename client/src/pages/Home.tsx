@@ -101,7 +101,7 @@ export default function Home() {
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(45 * 60);
   const [timerSeconds, setTimerSeconds] = useState(45 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [timerMinimized, setTimerMinimized] = useState(false);
+  const [timerMinimized, setTimerMinimized] = useState(true);
   const [showFeedbackSurvey, setShowFeedbackSurvey] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
@@ -276,7 +276,7 @@ export default function Home() {
       setCorregido(false);
       setCalificacion(null);
       setTimerRunning(false);
-      setTimerMinimized(false);
+      setTimerMinimized(true);
       setShowFeedbackSurvey(false);
       setFeedbackSubmitted(false);
       setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
@@ -344,7 +344,7 @@ export default function Home() {
     setCorregido(false);
     setCalificacion(null);
     setTimerRunning(false);
-    setTimerMinimized(false);
+    setTimerMinimized(true);
     setShowFeedbackSurvey(false);
     setFeedbackSubmitted(false);
     setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
@@ -676,26 +676,26 @@ export default function Home() {
                 );
               })()}
               <div className="xl:hidden sticky top-20 z-30">
-                <div className="mb-6 rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_18px_50px_rgba(79,70,229,0.12)] p-4">
+                <div className="mb-5 rounded-[1.5rem] border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_18px_50px_rgba(79,70,229,0.12)] p-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                         {timerMode === "down" ? <Hourglass className="w-3.5 h-3.5" /> : <Clock3 className="w-3.5 h-3.5" />}
                         Tiempo de examen
                       </div>
-                      <div className={`mt-2 text-3xl font-black ${timerTextClass}`}>{displayedTimer}</div>
+                      <div className={`mt-1.5 text-[1.65rem] font-black ${timerTextClass}`}>{displayedTimer}</div>
                     </div>
-                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-3 text-white shadow-lg`}>
-                      {timerMode === "down" ? <Hourglass className="w-5 h-5" /> : <Clock3 className="w-5 h-5" />}
+                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-2.5 text-white shadow-lg`}>
+                      {timerMode === "down" ? <Hourglass className="w-4.5 h-4.5" /> : <Clock3 className="w-4.5 h-4.5" />}
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button
                       type="button"
                       variant={timerMode === "down" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("down")}
-                      className={`rounded-xl ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl text-xs ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Temporizador
                     </Button>
@@ -703,7 +703,7 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "up" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("up")}
-                      className={`rounded-xl ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl text-xs ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Cronometro
                     </Button>
@@ -717,41 +717,41 @@ export default function Home() {
                       value={timerMinutesInput}
                       onChange={(e) => setTimerMinutesInput(e.target.value)}
                       onBlur={handleTimerMinutesBlur}
-                      className="h-11 rounded-xl border-indigo-100"
+                      className="h-9 rounded-xl border-indigo-100 text-sm"
                     />
-                    <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">min</span>
+                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">min</span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-4 gap-2">
+                  <div className="mt-3 grid grid-cols-4 gap-1.5">
                     {TIMER_PRESETS.map((preset) => (
                       <Button
                         key={preset}
                         type="button"
                         variant="outline"
                         onClick={() => applyTimerDuration(preset)}
-                        className="rounded-xl border-indigo-100 px-0 text-xs font-bold text-slate-600"
+                        className="h-8 rounded-lg border-indigo-100 px-0 text-[11px] font-bold text-slate-600"
                       >
                         {preset}m
                       </Button>
                     ))}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button
                       type="button"
                       onClick={() => setTimerRunning((current) => !current)}
-                      className="rounded-xl btn-gradient"
+                      className="h-9 rounded-xl btn-gradient text-xs"
                     >
-                      {timerRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                      {timerRunning ? <Pause className="w-3.5 h-3.5 mr-1.5" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
                       {timerRunning ? "Pausar" : "Iniciar"}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleTimerReset}
-                      className="rounded-xl border-indigo-100 text-slate-600"
+                      className="h-9 rounded-xl border-indigo-100 text-xs text-slate-600"
                     >
-                      <TimerReset className="w-4 h-4 mr-2" />
+                      <TimerReset className="w-3.5 h-3.5 mr-1.5" />
                       Reset
                     </Button>
                   </div>
@@ -759,58 +759,58 @@ export default function Home() {
               </div>
               <div className="hidden xl:block fixed left-4 top-1/2 -translate-y-1/2 z-40">
                 {timerMinimized ? (
-                  <div className="w-[88px] rounded-[28px] border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] px-3 py-4">
-                    <div className="flex flex-col items-center gap-3">
+                  <div className="w-[74px] rounded-[24px] border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_20px_60px_rgba(79,70,229,0.14)] px-2.5 py-3">
+                    <div className="flex flex-col items-center gap-2.5">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => setTimerMinimized(false)}
-                        className="h-8 w-8 rounded-full text-slate-500 hover:text-indigo-600"
+                        className="h-7 w-7 rounded-full text-slate-500 hover:text-indigo-600"
                         aria-label="Mostrar reloj"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </Button>
-                      <div className={`text-center text-sm font-black ${timerTextClass}`}>{displayedTimer}</div>
-                      <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-2.5 text-white shadow-lg`}>
-                        {timerMode === "down" ? <Hourglass className="w-4 h-4" /> : <Clock3 className="w-4 h-4" />}
+                      <div className={`text-center text-[11px] font-black leading-tight ${timerTextClass}`}>{displayedTimer}</div>
+                      <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-2 text-white shadow-lg`}>
+                        {timerMode === "down" ? <Hourglass className="w-3.5 h-3.5" /> : <Clock3 className="w-3.5 h-3.5" />}
                       </div>
                     </div>
                   </div>
                 ) : (
-                <div className="w-[248px] rounded-3xl border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-5">
+                <div className="w-[220px] rounded-[26px] border border-indigo-100 bg-white/92 backdrop-blur-xl shadow-[0_20px_60px_rgba(79,70,229,0.14)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
                         {timerMode === "down" ? <Hourglass className="w-3.5 h-3.5" /> : <Clock3 className="w-3.5 h-3.5" />}
                         Cronómetro
                       </div>
-                      <div className={`mt-3 text-[2rem] leading-none font-black ${timerTextClass}`}>{displayedTimer}</div>
+                      <div className={`mt-2.5 text-[1.75rem] leading-none font-black ${timerTextClass}`}>{displayedTimer}</div>
                     </div>
-                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-3 text-white shadow-lg`}>
-                      {timerMode === "down" ? <Hourglass className="w-5 h-5" /> : <Clock3 className="w-5 h-5" />}
+                    <div className={`rounded-2xl bg-gradient-to-br ${timerGradientClass} p-2.5 text-white shadow-lg`}>
+                      {timerMode === "down" ? <Hourglass className="w-4.5 h-4.5" /> : <Clock3 className="w-4.5 h-4.5" />}
                     </div>
                   </div>
 
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-3 flex justify-end">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => setTimerMinimized(true)}
-                      className="h-8 rounded-xl px-2 text-slate-500 hover:text-indigo-600"
+                      className="h-7 rounded-lg px-2 text-xs text-slate-500 hover:text-indigo-600"
                     >
-                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      <ChevronLeft className="w-3.5 h-3.5 mr-1" />
                       Minimizar
                     </Button>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     <Button
                       type="button"
                       variant={timerMode === "down" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("down")}
-                      className={`rounded-xl text-xs ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Temporizador
                     </Button>
@@ -818,13 +818,13 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "up" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("up")}
-                      className={`rounded-xl text-xs ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Cronometro
                     </Button>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-2">
                     <Input
                       type="number"
                       min={1}
@@ -832,41 +832,41 @@ export default function Home() {
                       value={timerMinutesInput}
                       onChange={(e) => setTimerMinutesInput(e.target.value)}
                       onBlur={handleTimerMinutesBlur}
-                      className="h-11 rounded-xl border-indigo-100"
+                      className="h-9 rounded-xl border-indigo-100 text-sm"
                     />
-                    <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">min</span>
+                    <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">min</span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-4 gap-2">
+                  <div className="mt-3 grid grid-cols-4 gap-1.5">
                     {TIMER_PRESETS.map((preset) => (
                       <Button
                         key={preset}
                         type="button"
                         variant="outline"
                         onClick={() => applyTimerDuration(preset)}
-                        className="rounded-xl border-indigo-100 px-0 text-xs font-bold text-slate-600"
+                        className="h-8 rounded-lg border-indigo-100 px-0 text-[11px] font-bold text-slate-600"
                       >
                         {preset}m
                       </Button>
                     ))}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button
                       type="button"
                       onClick={() => setTimerRunning((current) => !current)}
-                      className="rounded-xl btn-gradient"
+                      className="h-9 rounded-xl btn-gradient text-xs"
                     >
-                      {timerRunning ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                      {timerRunning ? <Pause className="w-3.5 h-3.5 mr-1.5" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
                       {timerRunning ? "Pausar" : "Iniciar"}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleTimerReset}
-                      className="rounded-xl border-indigo-100 text-slate-600"
+                      className="h-9 rounded-xl border-indigo-100 text-xs text-slate-600"
                     >
-                      <TimerReset className="w-4 h-4 mr-2" />
+                      <TimerReset className="w-3.5 h-3.5 mr-1.5" />
                       Reset
                     </Button>
                   </div>
@@ -1077,37 +1077,37 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-2xl"
+                    className="fixed inset-x-4 bottom-20 z-50 mx-auto max-w-md sm:inset-x-auto sm:right-6 sm:left-auto sm:w-[360px]"
                   >
-                    <div className="rounded-[2rem] border border-indigo-100 bg-white/95 backdrop-blur-xl shadow-[0_24px_80px_rgba(79,70,229,0.16)] p-6 md:p-7">
-                      <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-[1.5rem] border border-indigo-100 bg-white/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(79,70,229,0.14)] p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">Tu opinión</p>
-                          <h3 className="mt-2 text-2xl font-bold text-slate-900">¿Qué te ha parecido la calidad del examen?</h3>
-                          <p className="mt-2 text-sm text-slate-500">Puedes valorarlo en un segundo o cerrar este mensaje si prefieres hacerlo más tarde.</p>
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-500">Tu opinión</p>
+                          <h3 className="mt-1.5 text-base font-bold text-slate-900 sm:text-lg">¿Cómo te ha parecido este examen?</h3>
+                          <p className="mt-1 text-xs text-slate-500 sm:text-sm">Valóralo en un momento o cierra este aviso si prefieres seguir.</p>
                         </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => setShowFeedbackSurvey(false)}
-                          className="rounded-full text-slate-400 hover:text-slate-700"
+                          className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-700"
                           aria-label="Cerrar encuesta"
                         >
-                          <XCircle className="w-5 h-5" />
+                          <XCircle className="w-4 h-4" />
                         </Button>
                       </div>
 
-                      <div className="mt-6 grid grid-cols-5 gap-2 md:gap-3">
+                      <div className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2">
                         {EXAM_FEEDBACK_OPTIONS.map((option) => (
                           <button
                             key={option.score}
                             type="button"
                             onClick={() => handleFeedbackVote(option.score)}
-                            className="rounded-2xl border border-slate-200 bg-slate-50 px-2 py-4 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-1"
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-2.5 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 sm:px-2 sm:py-3"
                           >
-                            <div className="text-3xl md:text-4xl">{option.emoji}</div>
-                            <div className="mt-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">{option.label}</div>
+                            <div className="text-2xl leading-none sm:text-3xl">{option.emoji}</div>
+                            <div className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">{option.label}</div>
                           </button>
                         ))}
                       </div>
