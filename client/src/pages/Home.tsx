@@ -695,7 +695,7 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "down" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("down")}
-                      className={`h-9 rounded-xl text-xs ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] leading-tight whitespace-normal ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Temporizador
                     </Button>
@@ -703,7 +703,7 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "up" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("up")}
-                      className={`h-9 rounded-xl text-xs ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] leading-tight whitespace-normal ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Cronometro
                     </Button>
@@ -810,7 +810,7 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "down" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("down")}
-                      className={`h-9 rounded-xl px-2 text-[11px] ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] leading-tight whitespace-normal ${timerMode === "down" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Temporizador
                     </Button>
@@ -818,7 +818,7 @@ export default function Home() {
                       type="button"
                       variant={timerMode === "up" ? "default" : "outline"}
                       onClick={() => handleTimerModeChange("up")}
-                      className={`h-9 rounded-xl px-2 text-[11px] ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
+                      className={`h-9 rounded-xl px-2 text-[11px] leading-tight whitespace-normal ${timerMode === "up" ? "btn-gradient text-white" : "border-indigo-100 text-slate-600"}`}
                     >
                       Cronometro
                     </Button>
@@ -1077,13 +1077,13 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="fixed inset-x-4 bottom-20 z-50 mx-auto max-w-md sm:inset-x-auto sm:right-6 sm:left-auto sm:w-[360px]"
+                    className="fixed inset-x-4 bottom-20 z-50 mx-auto max-w-sm sm:inset-x-auto sm:right-6 sm:left-auto sm:w-[340px]"
                   >
                     <div className="rounded-[1.5rem] border border-indigo-100 bg-white/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(79,70,229,0.14)] p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="min-w-0 pr-1">
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-500">Tu opinión</p>
-                          <h3 className="mt-1.5 text-base font-bold text-slate-900 sm:text-lg">¿Cómo te ha parecido este examen?</h3>
+                          <h3 className="mt-1.5 text-sm font-bold leading-tight text-slate-900 sm:text-base">¿Cómo te ha parecido este examen?</h3>
                           <p className="mt-1 text-xs text-slate-500 sm:text-sm">Valóralo en un momento o cierra este aviso si prefieres seguir.</p>
                         </div>
                         <Button
@@ -1104,10 +1104,11 @@ export default function Home() {
                             key={option.score}
                             type="button"
                             onClick={() => handleFeedbackVote(option.score)}
-                            className="rounded-xl border border-slate-200 bg-slate-50 px-1.5 py-2.5 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 sm:px-2 sm:py-3"
+                            className="aspect-square min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-1 py-2 text-center transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:-translate-y-0.5 sm:aspect-auto sm:px-2 sm:py-3"
                           >
                             <div className="text-2xl leading-none sm:text-3xl">{option.emoji}</div>
-                            <div className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">{option.label}</div>
+                            <div className="mt-1 text-[9px] font-bold text-slate-400 sm:hidden">{option.score}</div>
+                            <div className="mt-1.5 hidden text-[11px] font-bold uppercase tracking-wide text-slate-500 sm:block">{option.label}</div>
                           </button>
                         ))}
                       </div>
