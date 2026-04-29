@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { BookOpen, Clock, ArrowRight, Sparkles, Brain, Book, Heart } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Sparkles, Brain, Book, Heart, Layers3, AlertTriangle, CalendarRange, NotebookPen } from "lucide-react";
 
 export default function Blog() {
     const posts = [
@@ -46,6 +46,46 @@ export default function Blog() {
             image: "/blog/ansiedad-examenes.png",
             icon: <Heart className="w-5 h-5" />,
             color: "emerald"
+        },
+        {
+            id: "como-estudiar-temarios-largos",
+            title: "Cómo estudiar temarios largos sin perder el control",
+            excerpt: "Aprende a dividir manuales y materiales densos en bloques útiles, priorizar con criterio y practicar sin sentir que el temario te supera.",
+            category: "Productividad",
+            readTime: "9 min",
+            image: "/blog/oposiciones.png",
+            icon: <Layers3 className="w-5 h-5" />,
+            color: "sky"
+        },
+        {
+            id: "errores-frecuentes-tipo-test",
+            title: "Errores frecuentes al estudiar con exámenes tipo test",
+            excerpt: "No todos los tests enseñan igual. Descubre qué hábitos sabotean tu preparación y cómo convertir cada simulacro en aprendizaje real.",
+            category: "Estrategia",
+            readTime: "8 min",
+            image: "/blog/tecnicas-estudio.png",
+            icon: <AlertTriangle className="w-5 h-5" />,
+            color: "rose"
+        },
+        {
+            id: "organizar-semana-examenes",
+            title: "Cómo organizar una semana de exámenes sin colapsar",
+            excerpt: "Una guía clara para repartir repasos, simulacros y descansos cuando se juntan varios parciales o finales en pocos días.",
+            category: "Planificación",
+            readTime: "7 min",
+            image: "/blog/ansiedad-examenes.png",
+            icon: <CalendarRange className="w-5 h-5" />,
+            color: "teal"
+        },
+        {
+            id: "como-tomar-mejores-apuntes",
+            title: "Cómo tomar mejores apuntes en la universidad",
+            excerpt: "Convierte notas caóticas en material claro, útil y perfecto para repasos activos, tests y simulacros con IA.",
+            category: "Universidad",
+            readTime: "8 min",
+            image: "/blog/ia-educacion.png",
+            icon: <NotebookPen className="w-5 h-5" />,
+            color: "fuchsia"
         }
     ];
 

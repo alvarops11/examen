@@ -19,6 +19,10 @@ import ArticuloTecnicas from "./pages/blog/ArticuloTecnicas";
 import ArticuloIAEducacion from "./pages/blog/ArticuloIAEducacion";
 import ArticuloOposiciones from "./pages/blog/ArticuloOposiciones";
 import ArticuloAnsiedad from "./pages/blog/ArticuloAnsiedad";
+import ArticuloTemariosLargos from "./pages/blog/ArticuloTemariosLargos";
+import ArticuloErroresTest from "./pages/blog/ArticuloErroresTest";
+import ArticuloPlanSemanal from "./pages/blog/ArticuloPlanSemanal";
+import ArticuloApuntes from "./pages/blog/ArticuloApuntes";
 
 /**
  * ExamSphere - Generador de Exámenes con IA
@@ -46,6 +50,10 @@ function Router() {
         <Route path={"/blog/ia-educacion"} component={ArticuloIAEducacion} />
         <Route path={"/blog/preparar-oposiciones-ia"} component={ArticuloOposiciones} />
         <Route path={"/blog/reducir-ansiedad-examenes"} component={ArticuloAnsiedad} />
+        <Route path={"/blog/como-estudiar-temarios-largos"} component={ArticuloTemariosLargos} />
+        <Route path={"/blog/errores-frecuentes-tipo-test"} component={ArticuloErroresTest} />
+        <Route path={"/blog/organizar-semana-examenes"} component={ArticuloPlanSemanal} />
+        <Route path={"/blog/como-tomar-mejores-apuntes"} component={ArticuloApuntes} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
