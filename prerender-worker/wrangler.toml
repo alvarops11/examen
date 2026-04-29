@@ -1,0 +1,15 @@
+name = "examsphere-prerender"
+main = "src/index.ts"
+compatibility_date = "2026-04-29"
+
+routes = [
+  { pattern = "examsphere.me/*", zone_name = "examsphere.me" },
+  { pattern = "www.examsphere.me/*", zone_name = "examsphere.me" }
+]
+
+[vars]
+# Comma-separated list of public hosts that should be prerendered.
+# Example:
+# PRERENDER_HOSTS = "examsphere.me,www.examsphere.me"
+PRERENDER_HOSTS = "examsphere.me,www.examsphere.me"
+PRERENDER_SERVICE_URL = "https://service.prerender.io"
