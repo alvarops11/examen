@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
-import { BookOpen, Upload, Settings, CheckCircle, GraduationCap } from "lucide-react";
+import { BookOpen, Upload, Settings, CheckCircle, GraduationCap, ShieldCheck, TimerReset, FileDown, BrainCircuit } from "lucide-react";
 import { Link } from "wouter";
 
 export default function HowToUse() {
@@ -78,6 +78,71 @@ export default function HowToUse() {
                         </motion.div>
                     ))}
                 </div>
+
+                <section className="mt-20 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6">
+                            <BrainCircuit className="w-7 h-7" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-4">Que hace realmente ExamSphere</h2>
+                        <div className="space-y-4 text-slate-600 leading-relaxed">
+                            <p>
+                                ExamSphere no se limita a escribir preguntas sueltas. Convierte tus propios apuntes, PDFs o textos en un flujo completo de practica: generacion, realizacion, correccion y revision.
+                            </p>
+                            <p>
+                                Puedes ajustar dificultad, numero de preguntas y contexto academico para que el simulacro se acerque mas a tu nivel real de estudio.
+                            </p>
+                            <p>
+                                Despues del examen, la plataforma muestra correccion, nota final y explicaciones por pregunta para ayudarte a entender el fallo y no solo a contar aciertos.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
+                            <ShieldCheck className="w-7 h-7" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-4">Calidad, control y privacidad</h2>
+                        <div className="space-y-4 text-slate-600 leading-relaxed">
+                            <p>
+                                El sistema aplica validaciones internas para reducir preguntas incompletas, opciones invalidas o respuestas mal construidas antes de mostrar el examen al usuario.
+                            </p>
+                            <p>
+                                Cuando el material es mas largo o complejo, ExamSphere reorganiza el contenido para mantener estabilidad y seguir generando simulacros utiles.
+                            </p>
+                            <p>
+                                Ademas, el contenido de tus documentos se procesa para crear el examen, pero no se conserva como una biblioteca publica ni se reutiliza como material compartido entre usuarios.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="mt-10 rounded-[2rem] border border-slate-200 bg-slate-50 p-8">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Todo lo que puedes hacer dentro del examen</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="rounded-3xl bg-white border border-slate-200 p-6">
+                            <TimerReset className="w-8 h-8 text-indigo-600 mb-4" />
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Temporizador integrado</h3>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Realiza el simulacro con cronometro o temporizador para acercarte mas a una situacion de examen real.
+                            </p>
+                        </div>
+                        <div className="rounded-3xl bg-white border border-slate-200 p-6">
+                            <FileDown className="w-8 h-8 text-violet-600 mb-4" />
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Descarga en PDF</h3>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Puedes descargar tanto el examen normal como el PDF corregido para repasar despues o imprimirlo.
+                            </p>
+                        </div>
+                        <div className="rounded-3xl bg-white border border-slate-200 p-6">
+                            <GraduationCap className="w-8 h-8 text-emerald-600 mb-4" />
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">Revision explicada</h3>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                Cada pregunta corregida incluye explicacion para convertir el simulacro en aprendizaje y no solo en una nota final.
+                            </p>
+                        </div>
+                    </div>
+                </section>
 
                 <motion.div
                     initial={{ opacity: 0 }}

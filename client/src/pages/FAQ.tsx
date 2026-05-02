@@ -25,8 +25,20 @@ export default function FAQ() {
             answer: "Utilizamos modelos de lenguaje de última generación optimizados para la comprensión de textos educativos y la generación de preguntas coherentes y pedagógicamente útiles."
         },
         {
+            question: "¿Las preguntas se revisan antes de mostrarse?",
+            answer: "Sí. ExamSphere aplica validaciones internas para reducir preguntas incompletas, opciones inválidas o respuestas mal construidas antes de entregar el examen al usuario."
+        },
+        {
+            question: "¿El examen incluye explicaciones al corregir?",
+            answer: "Sí. Al corregir el simulacro no solo ves la respuesta correcta, sino también una explicación por pregunta para ayudarte a entender el error y fijar mejor los conceptos."
+        },
+        {
             question: "¿Cuántas preguntas puedo generar a la vez?",
             answer: "Puedes generar desde 5 hasta 50 preguntas por examen. Recomendamos subir material suficiente para asegurar que las preguntas tengan variedad y cubran todo el temario."
+        },
+        {
+            question: "¿Puedo descargar el examen para repasarlo después?",
+            answer: "Sí. Puedes descargar tanto el examen normal como el PDF corregido para seguir repasando fuera de la plataforma o imprimirlo si lo prefieres."
         },
         {
             question: "¿Se guardan mis datos o documentos?",

@@ -1184,9 +1184,9 @@ export default function Home() {
                 </div>
                 <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
                   <div className="relative z-10">
-                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-xs">Prueba de Eficacia</p>
-                    <p className="text-3xl font-black mb-4">+70%</p>
-                    <p className="text-slate-400">De mejora media en la retención detectada en usuarios que practican con tests IA frente a lectura pasiva.</p>
+                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-xs">Lo que si puedes esperar</p>
+                    <p className="text-3xl font-black mb-4">Practica guiada</p>
+                    <p className="text-slate-400">Generacion de simulacros con tu propio material, correccion inmediata, explicaciones por pregunta y descarga en PDF para seguir repasando fuera de la plataforma.</p>
                   </div>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 </div>

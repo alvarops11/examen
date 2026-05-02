@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
-import { BrainCircuit, Target, ShieldCheck, Heart } from "lucide-react";
+import { BrainCircuit, Target, ShieldCheck, Heart, FileDown, TimerReset, CheckCircle2 } from "lucide-react";
 
 export default function SobreNosotros() {
     const values = [
@@ -255,6 +255,66 @@ export default function SobreNosotros() {
                                     <p className="text-sm font-bold text-emerald-600 mb-3">04. Preparado para materiales exigentes</p>
                                     <p className="text-slate-700 leading-relaxed">
                                         Temarios largos, apuntes densos, oposiciones, universidad o contenidos técnicos: trabajamos para que la herramienta aguante escenarios reales de estudio, no solo demos rápidas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                                <CheckCircle2 className="w-10 h-10 text-indigo-600 mb-5" />
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">No es solo un prompt bonito</h3>
+                                <p className="text-slate-600 leading-relaxed text-sm">
+                                    ExamSphere esta pensado como un flujo completo: subir material, generar el simulacro, hacerlo, corregirlo y revisar explicaciones sin tener que construir todo el proceso manualmente.
+                                </p>
+                            </div>
+                            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                                <TimerReset className="w-10 h-10 text-violet-600 mb-5" />
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">Entrenamiento con contexto real</h3>
+                                <p className="text-slate-600 leading-relaxed text-sm">
+                                    La experiencia incluye temporizador, correccion inmediata y formato de practica para que el estudio se acerque mas a una situacion de examen y no solo a una lectura pasiva.
+                                </p>
+                            </div>
+                            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                                <FileDown className="w-10 h-10 text-emerald-600 mb-5" />
+                                <h3 className="text-xl font-bold text-slate-900 mb-3">Resultados que puedes reutilizar</h3>
+                                <p className="text-slate-600 leading-relaxed text-sm">
+                                    Puedes descargar el examen y su version corregida en PDF para repasar, imprimir o volver a trabajar sobre el mismo contenido cuando lo necesites.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-10 text-white">
+                            <div className="max-w-3xl">
+                                <p className="text-xs font-bold uppercase tracking-[0.24em] text-indigo-300 mb-3">Como cuidamos la calidad</p>
+                                <h3 className="text-2xl md:text-3xl font-bold mb-5">Detras del examen hay mas control del que parece a simple vista</h3>
+                                <p className="text-slate-300 leading-relaxed text-lg mb-8">
+                                    Una parte importante del valor de ExamSphere no esta solo en generar preguntas, sino en filtrar, revisar y presentar el resultado para que el simulacro sea util de verdad para estudiar.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
+                                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                                    <p className="font-bold text-white mb-2">Validacion interna de preguntas</p>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        El sistema revisa estructura, opciones y consistencia basica para reducir preguntas incompletas, respuestas invalidas o bloques mal construidos.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                                    <p className="font-bold text-white mb-2">Explicaciones despues de corregir</p>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        Cada simulacro corregido incluye explicaciones por pregunta para que el usuario entienda el error y pueda consolidar mejor el concepto.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                                    <p className="font-bold text-white mb-2">Mejor comportamiento con materiales largos</p>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        La plataforma esta preparada para reorganizar documentos densos y temarios amplios con el objetivo de mantener utilidad, estabilidad y calidad de salida.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+                                    <p className="font-bold text-white mb-2">Privacidad centrada en el estudiante</p>
+                                    <p className="text-slate-300 leading-relaxed">
+                                        El contenido se procesa para generar el examen, pero no se convierte en una base publica de apuntes ni en un repositorio compartido entre usuarios.
                                     </p>
                                 </div>
                             </div>
