@@ -15,14 +15,13 @@ export default function ArticuloApuntes() {
                 jsonLd={{
                     "@context": "https://schema.org",
                     "@type": "BlogPosting",
-                    "headline": "Cómo tomar mejores apuntes en la universidad",
-                    "description": "Consejos para transformar apuntes caóticos en materiales claros, repasables y preparados para la autoevaluación.",
-                    "author": {
+                    headline: "Cómo tomar mejores apuntes en la universidad",
+                    description: "Consejos para transformar apuntes caóticos en materiales claros, repasables y preparados para la autoevaluación.",
+                    author: {
                         "@type": "Organization",
-                        "name": "ExamSphere"
+                        name: "ExamSphere",
                     },
-                    "datePublished": "2026-04-29",
-                    "image": "/blog/ia-educacion.png"
+                    datePublished: "2026-04-29",
                 }}
             />
             <Header />
@@ -48,7 +47,19 @@ export default function ArticuloApuntes() {
                 </div>
 
                 <div className="max-w-5xl mx-auto px-4 mb-16">
-                    <img src="/blog/ia-educacion.png" alt="Apuntes universitarios organizados" className="w-full aspect-[21/9] object-cover rounded-[2rem] shadow-2xl" />
+                    <div className="aspect-[21/9] rounded-[2rem] shadow-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-slate-900 text-white p-8 md:p-12 flex flex-col justify-between overflow-hidden">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/15">
+                                <NotebookPen className="w-7 h-7" />
+                            </div>
+                            <span className="text-xs uppercase tracking-[0.3em] text-white/75">Apuntes que sirven</span>
+                        </div>
+                        <div className="max-w-2xl">
+                            <p className="text-3xl md:text-5xl font-black leading-tight text-balance">
+                                Tus apuntes deberían ayudarte a estudiar mejor, no a perder tiempo ordenándolos.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="max-w-3xl mx-auto px-4 pb-24">

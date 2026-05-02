@@ -2,11 +2,36 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 import { Link } from "wouter";
-import { BookOpen, Clock, ArrowRight, Sparkles, Brain, Book, Heart, Layers3, AlertTriangle, CalendarRange, NotebookPen } from "lucide-react";
+import {
+    Clock,
+    ArrowRight,
+    Sparkles,
+    Brain,
+    Book,
+    Heart,
+    Layers3,
+    AlertTriangle,
+    CalendarRange,
+    NotebookPen,
+} from "lucide-react";
+
+type BlogPost = {
+    id: string;
+    title: string;
+    excerpt: string;
+    category: string;
+    readTime: string;
+    icon: ReactNode;
+    color: string;
+    image?: string;
+    visualClass?: string;
+    visualEyebrow?: string;
+};
 
 export default function Blog() {
-    const posts = [
+    const posts: BlogPost[] = [
         {
             id: "tecnicas-estudio",
             title: "Dominando el Active Recall y la Repetición Espaciada",
@@ -15,37 +40,37 @@ export default function Blog() {
             readTime: "8 min",
             image: "/blog/tecnicas-estudio.png",
             icon: <Brain className="w-5 h-5" />,
-            color: "indigo"
+            color: "indigo",
         },
         {
             id: "ia-educacion",
-            title: "El Futuro de la Educación: ¿Cómo la IA Personaliza el Aprendizaje?",
-            excerpt: "La inteligencia artificial no es solo para chatbots. Analicemos cómo está transformando la formación universitaria y el rol del estudiante.",
+            title: "El futuro de la educación: cómo la IA personaliza el aprendizaje",
+            excerpt: "La inteligencia artificial no es solo para chatbots. Analizamos cómo está transformando la formación universitaria y el papel del estudiante.",
             category: "IA & Educación",
             readTime: "10 min",
             image: "/blog/ia-educacion.png",
             icon: <Sparkles className="w-5 h-5" />,
-            color: "violet"
+            color: "violet",
         },
         {
             id: "preparar-oposiciones-ia",
-            title: "IA para Opositores: El Secreto para Memorizar Leyes y Temarios",
-            excerpt: "¿Preparando una oposición? Descubre cómo transformar textos legales áridos en tests de práctica dinámicos y efectivos.",
+            title: "IA para opositores: el secreto para memorizar leyes y temarios",
+            excerpt: "Si estás preparando una oposición, aquí tienes una forma más práctica de transformar material árido en entrenamiento útil.",
             category: "Oposiciones",
             readTime: "7 min",
             image: "/blog/oposiciones.png",
             icon: <Book className="w-5 h-5" />,
-            color: "amber"
+            color: "amber",
         },
         {
             id: "reducir-ansiedad-examenes",
-            title: "Venciendo el Miedo al Papel en Blanco con Autotests",
+            title: "Venciendo el miedo al papel en blanco con autotests",
             excerpt: "La ciencia demuestra que el test frecuente reduce la ansiedad. Aprende cómo ganar confianza antes del gran día.",
             category: "Bienestar",
             readTime: "6 min",
             image: "/blog/ansiedad-examenes.png",
             icon: <Heart className="w-5 h-5" />,
-            color: "emerald"
+            color: "emerald",
         },
         {
             id: "como-estudiar-temarios-largos",
@@ -53,9 +78,10 @@ export default function Blog() {
             excerpt: "Aprende a dividir manuales y materiales densos en bloques útiles, priorizar con criterio y practicar sin sentir que el temario te supera.",
             category: "Productividad",
             readTime: "9 min",
-            image: "/blog/oposiciones.png",
             icon: <Layers3 className="w-5 h-5" />,
-            color: "sky"
+            color: "sky",
+            visualClass: "from-sky-500 via-indigo-500 to-slate-900",
+            visualEyebrow: "Temarios extensos",
         },
         {
             id: "errores-frecuentes-tipo-test",
@@ -63,9 +89,10 @@ export default function Blog() {
             excerpt: "No todos los tests enseñan igual. Descubre qué hábitos sabotean tu preparación y cómo convertir cada simulacro en aprendizaje real.",
             category: "Estrategia",
             readTime: "8 min",
-            image: "/blog/tecnicas-estudio.png",
             icon: <AlertTriangle className="w-5 h-5" />,
-            color: "rose"
+            color: "rose",
+            visualClass: "from-rose-500 via-orange-400 to-slate-900",
+            visualEyebrow: "Aprender corrigiendo",
         },
         {
             id: "organizar-semana-examenes",
@@ -73,9 +100,10 @@ export default function Blog() {
             excerpt: "Una guía clara para repartir repasos, simulacros y descansos cuando se juntan varios parciales o finales en pocos días.",
             category: "Planificación",
             readTime: "7 min",
-            image: "/blog/ansiedad-examenes.png",
             icon: <CalendarRange className="w-5 h-5" />,
-            color: "teal"
+            color: "teal",
+            visualClass: "from-teal-500 via-cyan-500 to-slate-900",
+            visualEyebrow: "Orden y claridad",
         },
         {
             id: "como-tomar-mejores-apuntes",
@@ -83,10 +111,11 @@ export default function Blog() {
             excerpt: "Convierte notas caóticas en material claro, útil y perfecto para repasos activos, tests y simulacros con IA.",
             category: "Universidad",
             readTime: "8 min",
-            image: "/blog/ia-educacion.png",
             icon: <NotebookPen className="w-5 h-5" />,
-            color: "fuchsia"
-        }
+            color: "fuchsia",
+            visualClass: "from-fuchsia-500 via-violet-500 to-slate-900",
+            visualEyebrow: "Apuntes que sirven",
+        },
     ];
 
     return (
@@ -124,11 +153,29 @@ export default function Blog() {
                             <Link href={`/blog/${post.id}`}>
                                 <div className="glass-card rounded-[2rem] overflow-hidden border border-slate-200 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 cursor-pointer bg-white">
                                     <div className="aspect-video overflow-hidden relative">
-                                        <img
-                                            src={post.image}
-                                            alt={post.title}
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                        />
+                                        {post.image ? (
+                                            <img
+                                                src={post.image}
+                                                alt={post.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <div className={`w-full h-full bg-gradient-to-br ${post.visualClass} text-white p-6 md:p-8 flex flex-col justify-between`}>
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/15">
+                                                        {post.icon}
+                                                    </div>
+                                                    <span className="text-[11px] uppercase tracking-[0.24em] text-white/80 text-right">
+                                                        {post.visualEyebrow}
+                                                    </span>
+                                                </div>
+                                                <div className="max-w-sm">
+                                                    <p className="text-2xl md:text-3xl font-black leading-tight text-balance">
+                                                        {post.title}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="absolute top-4 left-4">
                                             <span className={`px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm text-xs font-bold text-${post.color}-600 shadow-sm flex items-center gap-2`}>
                                                 {post.icon}
@@ -144,7 +191,7 @@ export default function Blog() {
                                                 {post.readTime} lectura
                                             </span>
                                             <span>•</span>
-                                            <span>{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                                            <span>{new Date().toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span>
                                         </div>
 
                                         <h2 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-indigo-600 transition-colors leading-tight">
@@ -166,13 +213,12 @@ export default function Blog() {
                     ))}
                 </div>
 
-                {/* Newsletter / Static Content Section */}
                 <section className="mt-24 p-12 md:p-16 rounded-[3rem] bg-slate-900 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none" />
                     <div className="relative z-10 max-w-2xl">
                         <h3 className="text-3xl font-black mb-6">¿Quieres elevar tu promedio?</h3>
                         <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-                            Estamos preparando una guía completa sobre cómo hackear tu cerebro para exámenes finales. Únete a nuestra comunidad de estudiantes que buscan optimizar su tiempo y aprendizaje con el poder de la IA.
+                            Estamos preparando una guía completa sobre cómo estudiar mejor para finales, parciales y oposiciones. Únete a una comunidad de estudiantes que quiere sacar más partido a su tiempo con ayuda de la IA.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <input

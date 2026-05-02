@@ -15,14 +15,13 @@ export default function ArticuloPlanSemanal() {
                 jsonLd={{
                     "@context": "https://schema.org",
                     "@type": "BlogPosting",
-                    "headline": "Cómo organizar una semana de exámenes sin colapsar",
-                    "description": "Planifica repasos, simulacros y descansos de forma realista para llegar con claridad a una semana de parciales o finales.",
-                    "author": {
+                    headline: "Cómo organizar una semana de exámenes sin colapsar",
+                    description: "Planifica repasos, simulacros y descansos de forma realista para llegar con claridad a una semana de parciales o finales.",
+                    author: {
                         "@type": "Organization",
-                        "name": "ExamSphere"
+                        name: "ExamSphere",
                     },
-                    "datePublished": "2026-04-29",
-                    "image": "/blog/ansiedad-examenes.png"
+                    datePublished: "2026-04-29",
                 }}
             />
             <Header />
@@ -48,7 +47,19 @@ export default function ArticuloPlanSemanal() {
                 </div>
 
                 <div className="max-w-5xl mx-auto px-4 mb-16">
-                    <img src="/blog/ansiedad-examenes.png" alt="Planificación de semana de exámenes" className="w-full aspect-[21/9] object-cover rounded-[2rem] shadow-2xl" />
+                    <div className="aspect-[21/9] rounded-[2rem] shadow-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-slate-900 text-white p-8 md:p-12 flex flex-col justify-between overflow-hidden">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/15">
+                                <CalendarRange className="w-7 h-7" />
+                            </div>
+                            <span className="text-xs uppercase tracking-[0.3em] text-white/75">Orden y claridad</span>
+                        </div>
+                        <div className="max-w-2xl">
+                            <p className="text-3xl md:text-5xl font-black leading-tight text-balance">
+                                Cuando todo aprieta, un buen plan protege tu energía y tu cabeza.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="max-w-3xl mx-auto px-4 pb-24">

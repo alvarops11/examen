@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, Layers3, TimerReset, CheckCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, Layers3, TimerReset } from "lucide-react";
 import { Link } from "wouter";
 
 export default function ArticuloTemariosLargos() {
@@ -15,14 +15,13 @@ export default function ArticuloTemariosLargos() {
                 jsonLd={{
                     "@context": "https://schema.org",
                     "@type": "BlogPosting",
-                    "headline": "Cómo estudiar temarios largos sin perder el control",
-                    "description": "Estrategias realistas para abordar apuntes extensos, leyes, manuales universitarios y materiales densos con más claridad.",
-                    "author": {
+                    headline: "Cómo estudiar temarios largos sin perder el control",
+                    description: "Estrategias realistas para abordar apuntes extensos, leyes, manuales universitarios y materiales densos con más claridad.",
+                    author: {
                         "@type": "Organization",
-                        "name": "ExamSphere"
+                        name: "ExamSphere",
                     },
-                    "datePublished": "2026-04-29",
-                    "image": "/blog/oposiciones.png"
+                    datePublished: "2026-04-29",
                 }}
             />
             <Header />
@@ -52,11 +51,19 @@ export default function ArticuloTemariosLargos() {
                 </div>
 
                 <div className="max-w-5xl mx-auto px-4 mb-16">
-                    <img
-                        src="/blog/oposiciones.png"
-                        alt="Temarios largos organizados"
-                        className="w-full aspect-[21/9] object-cover rounded-[2rem] shadow-2xl"
-                    />
+                    <div className="aspect-[21/9] rounded-[2rem] shadow-2xl bg-gradient-to-br from-sky-500 via-indigo-500 to-slate-900 text-white p-8 md:p-12 flex flex-col justify-between overflow-hidden">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/15">
+                                <Layers3 className="w-7 h-7" />
+                            </div>
+                            <span className="text-xs uppercase tracking-[0.3em] text-white/75">Temarios extensos</span>
+                        </div>
+                        <div className="max-w-2xl">
+                            <p className="text-3xl md:text-5xl font-black leading-tight text-balance">
+                                Divide, prioriza y practica antes de que el volumen te coma.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="max-w-3xl mx-auto px-4 pb-24">
@@ -70,7 +77,7 @@ export default function ArticuloTemariosLargos() {
                             Una estrategia habitual es partir el temario cada 20 o 30 páginas. Eso puede ayudar, pero a veces mezcla conceptos distintos en el mismo bloque. Funciona mejor dividir por <strong>unidades de decisión</strong>: tema, epígrafe o pregunta probable de examen.
                         </p>
                         <p>
-                            Cuando cada bloque responde a una cuestión clara, estudiar deja de sentirse infinito. Ya no estás “con el tema 4”, sino resolviendo algo concreto: una definición, una clasificación, un procedimiento o una comparación.
+                            Cuando cada bloque responde a una cuestión clara, estudiar deja de sentirse infinito. Ya no estás con el tema 4, sino resolviendo algo concreto: una definición, una clasificación, un procedimiento o una comparación.
                         </p>
 
                         <div className="bg-indigo-50 rounded-3xl p-8 my-10 border border-indigo-100">

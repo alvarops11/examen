@@ -221,6 +221,44 @@ export default function SobreNosotros() {
                                 </div>
                             </div>
                         </div>
+
+                        <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-sm">
+                            <div className="max-w-3xl">
+                                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
+                                    Lo que nos diferencia de otras herramientas
+                                </h3>
+                                <p className="text-slate-600 text-lg leading-relaxed mb-8">
+                                    Muchas plataformas prometen estudiar con IA, pero acaban generando contenido genérico o poco útil para preparar un examen real. En ExamSphere priorizamos una experiencia más práctica, más clara y mucho más pegada al material del estudiante.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                                    <p className="text-sm font-bold text-indigo-600 mb-3">01. Material real, no banco genérico</p>
+                                    <p className="text-slate-700 leading-relaxed">
+                                        El examen nace de tus propios apuntes, temas y documentos. Eso hace que la práctica esté alineada con lo que realmente estudias y no con preguntas recicladas de contexto dudoso.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                                    <p className="text-sm font-bold text-violet-600 mb-3">02. Pensado para entrenar, no solo para resumir</p>
+                                    <p className="text-slate-700 leading-relaxed">
+                                        No buscamos impresionar con texto bonito. Buscamos que puedas ponerte a prueba, detectar fallos, repetir bloques y llegar al examen con más seguridad.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                                    <p className="text-sm font-bold text-sky-600 mb-3">03. Corrección útil de verdad</p>
+                                    <p className="text-slate-700 leading-relaxed">
+                                        La diferencia no está solo en acertar o fallar, sino en entender por qué. Por eso damos peso a explicaciones, feedback y revisión útil tras cada simulacro.
+                                    </p>
+                                </div>
+                                <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+                                    <p className="text-sm font-bold text-emerald-600 mb-3">04. Preparado para materiales exigentes</p>
+                                    <p className="text-slate-700 leading-relaxed">
+                                        Temarios largos, apuntes densos, oposiciones, universidad o contenidos técnicos: trabajamos para que la herramienta aguante escenarios reales de estudio, no solo demos rápidas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
