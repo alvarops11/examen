@@ -22,6 +22,7 @@ export default function ArticuloTemariosLargos() {
                         name: "ExamSphere",
                     },
                     datePublished: "2026-04-29",
+                    image: "/blog/temarios-largos.png",
                 }}
             />
             <Header />
@@ -51,19 +52,11 @@ export default function ArticuloTemariosLargos() {
                 </div>
 
                 <div className="max-w-5xl mx-auto px-4 mb-16">
-                    <div className="aspect-[21/9] rounded-[2rem] shadow-2xl bg-gradient-to-br from-sky-500 via-indigo-500 to-slate-900 text-white p-8 md:p-12 flex flex-col justify-between overflow-hidden">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-white/15 backdrop-blur-sm border border-white/15">
-                                <Layers3 className="w-7 h-7" />
-                            </div>
-                            <span className="text-xs uppercase tracking-[0.3em] text-white/75">Temarios extensos</span>
-                        </div>
-                        <div className="max-w-2xl">
-                            <p className="text-3xl md:text-5xl font-black leading-tight text-balance">
-                                Divide, prioriza y practica antes de que el volumen te coma.
-                            </p>
-                        </div>
-                    </div>
+                    <img
+                        src="/blog/temarios-largos.png"
+                        alt="Estudiante organizando un temario largo"
+                        className="w-full aspect-[21/9] object-cover rounded-[2rem] shadow-2xl"
+                    />
                 </div>
 
                 <div className="max-w-3xl mx-auto px-4 pb-24">

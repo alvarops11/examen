@@ -25,9 +25,7 @@ type BlogPost = {
     readTime: string;
     icon: ReactNode;
     color: string;
-    image?: string;
-    visualClass?: string;
-    visualEyebrow?: string;
+    image: string;
 };
 
 export default function Blog() {
@@ -78,10 +76,9 @@ export default function Blog() {
             excerpt: "Aprende a dividir manuales y materiales densos en bloques útiles, priorizar con criterio y practicar sin sentir que el temario te supera.",
             category: "Productividad",
             readTime: "9 min",
+            image: "/blog/temarios-largos.png",
             icon: <Layers3 className="w-5 h-5" />,
             color: "sky",
-            visualClass: "from-sky-500 via-indigo-500 to-slate-900",
-            visualEyebrow: "Temarios extensos",
         },
         {
             id: "errores-frecuentes-tipo-test",
@@ -89,10 +86,9 @@ export default function Blog() {
             excerpt: "No todos los tests enseñan igual. Descubre qué hábitos sabotean tu preparación y cómo convertir cada simulacro en aprendizaje real.",
             category: "Estrategia",
             readTime: "8 min",
+            image: "/blog/errores-test.png",
             icon: <AlertTriangle className="w-5 h-5" />,
             color: "rose",
-            visualClass: "from-rose-500 via-orange-400 to-slate-900",
-            visualEyebrow: "Aprender corrigiendo",
         },
         {
             id: "organizar-semana-examenes",
@@ -100,10 +96,9 @@ export default function Blog() {
             excerpt: "Una guía clara para repartir repasos, simulacros y descansos cuando se juntan varios parciales o finales en pocos días.",
             category: "Planificación",
             readTime: "7 min",
+            image: "/blog/semana-examenes.png",
             icon: <CalendarRange className="w-5 h-5" />,
             color: "teal",
-            visualClass: "from-teal-500 via-cyan-500 to-slate-900",
-            visualEyebrow: "Orden y claridad",
         },
         {
             id: "como-tomar-mejores-apuntes",
@@ -111,10 +106,9 @@ export default function Blog() {
             excerpt: "Convierte notas caóticas en material claro, útil y perfecto para repasos activos, tests y simulacros con IA.",
             category: "Universidad",
             readTime: "8 min",
+            image: "/blog/mejores-apuntes.png",
             icon: <NotebookPen className="w-5 h-5" />,
             color: "fuchsia",
-            visualClass: "from-fuchsia-500 via-violet-500 to-slate-900",
-            visualEyebrow: "Apuntes que sirven",
         },
     ];
 
@@ -153,29 +147,11 @@ export default function Blog() {
                             <Link href={`/blog/${post.id}`}>
                                 <div className="glass-card rounded-[2rem] overflow-hidden border border-slate-200 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 cursor-pointer bg-white">
                                     <div className="aspect-video overflow-hidden relative">
-                                        {post.image ? (
-                                            <img
-                                                src={post.image}
-                                                alt={post.title}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            />
-                                        ) : (
-                                            <div className={`w-full h-full bg-gradient-to-br ${post.visualClass} text-white p-6 md:p-8 flex flex-col justify-between`}>
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/15">
-                                                        {post.icon}
-                                                    </div>
-                                                    <span className="text-[11px] uppercase tracking-[0.24em] text-white/80 text-right">
-                                                        {post.visualEyebrow}
-                                                    </span>
-                                                </div>
-                                                <div className="max-w-sm">
-                                                    <p className="text-2xl md:text-3xl font-black leading-tight text-balance">
-                                                        {post.title}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <img
+                                            src={post.image}
+                                            alt={post.title}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
                                         <div className="absolute top-4 left-4">
                                             <span className={`px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm text-xs font-bold text-${post.color}-600 shadow-sm flex items-center gap-2`}>
                                                 {post.icon}
