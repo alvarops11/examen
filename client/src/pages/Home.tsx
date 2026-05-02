@@ -1192,37 +1192,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="mt-10 rounded-[2rem] border border-slate-200 bg-white px-6 py-8 shadow-sm">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-500">Seguir explorando</p>
-                  <h3 className="mt-2 text-2xl font-bold text-slate-900">Recursos, ayuda y páginas clave de ExamSphere</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    Si quieres conocer mejor cómo funciona la plataforma, resolver dudas habituales o profundizar en técnicas de estudio, aquí tienes los accesos más importantes.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:max-w-xl">
-                  <Link href="/blog" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    Blog
-                  </Link>
-                  <Link href="/sobre-nosotros" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    Sobre Nosotros
-                  </Link>
-                  <Link href="/como-usar" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    CÃ³mo Usar
-                  </Link>
-                  <Link href="/faq" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    FAQ
-                  </Link>
-                  <Link href="/contacto" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    Contacto
-                  </Link>
-                  <Link href="/blog/tecnicas-estudio" className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-600">
-                    TÃ©cnicas de estudio
-                  </Link>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
       )}
