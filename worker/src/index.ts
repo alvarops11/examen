@@ -31,6 +31,14 @@ interface GenerateRequest {
   visitorId?: string;
 }
 
+interface TutorRequest {
+  question: ExamQuestion;
+  userMessage: string;
+  userAnswerIndex?: number | null;
+  visitorType?: "new" | "returning";
+  visitorId?: string;
+}
+
 type ErrorCode =
   | "RATE_LIMIT"
   | "EMPTY_CONTENT"
@@ -337,6 +345,131 @@ async function fetchWithFailover(
   );
 }
 
+export function normalizeTutorAnswer(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*[*-]\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function generateTutorAnswer(
+  body: TutorRequest,
+  env: Env
+): Promise<string> {
+  const { question, userMessage, userAnswerIndex } = body;
+
+  if (!question?.question || !Array.isArray(question?.choices) || typeof userMessage !== "string" || !userMessage.trim()) {
+    throw new WorkerAppError(
+      "DOCUMENT_PROCESSING_FAILED",
+      "Tutor request incompleta",
+      "No se pudo abrir el tutor de errores con la información recibida."
+    );
+  }
+
+  const choicesText = question.choices
+    .map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`)
+    .join("\n");
+
+  const selectedChoice =
+    typeof userAnswerIndex === "number" && userAnswerIndex >= 0 && userAnswerIndex < question.choices.length
+      ? question.choices[userAnswerIndex]
+      : null;
+
+  const systemPrompt = `Eres el Tutor de errores de ExamSphere. Tu trabajo es ayudar al estudiante a entender una pregunta que acaba de corregir.
+
+<reglas>
+1. Responde siempre en español claro, natural y directo.
+2. Limítate exclusivamente a la pregunta, las opciones y la explicación proporcionadas.
+3. No inventes teoría que no se pueda inferir razonablemente del contexto recibido.
+4. No des la respuesta en formato brusco o seco: explica con tono de profesor útil.
+5. Si el alumno pregunta algo muy amplio o ajeno a la pregunta, redirígelo al concepto concreto evaluado.
+6. Tu respuesta debe ser breve pero útil: entre 80 y 220 palabras.
+7. Puedes usar viñetas cortas si ayudan, pero no conviertas la respuesta en algo excesivamente largo.
+8. No uses markdown, ni negritas, ni encabezados, ni asteriscos decorativos.
+</reglas>`;
+
+  const userPrompt = `Pregunta:
+${question.question}
+
+Opciones:
+${choicesText}
+
+Respuesta correcta:
+${question.choices[question.answerIndex]}
+
+${selectedChoice ? `Respuesta del alumno:\n${selectedChoice}\n` : ""}
+Explicación base:
+${question.explanation}
+
+Duda del alumno:
+${userMessage.trim()}
+
+Ayuda al alumno a entender mejor esta pregunta y su error si lo hubo.`;
+
+  const models = [
+    "openrouter/free",
+  ];
+
+  let lastError = "No se pudo obtener respuesta del tutor.";
+
+  for (let attempt = 0; attempt < models.length; attempt++) {
+    const model = models[attempt];
+    try {
+      const response = await fetchWithFailover(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://examsphere.app",
+            "X-Title": "ExamSphere",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            temperature: 0.2,
+          }),
+        },
+        env,
+        model,
+        attempt
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
+      }
+
+      const data: any = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+
+      if (content) {
+        return normalizeTutorAnswer(content);
+      }
+
+      throw new Error("Respuesta vacía del tutor");
+    } catch (error: any) {
+      lastError = error.message || lastError;
+    }
+  }
+
+  throw new WorkerAppError(
+    "UPSTREAM_UNAVAILABLE",
+    lastError,
+    "No se pudo consultar al tutor ahora mismo. Inténtalo de nuevo en un momento.",
+    true
+  );
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -422,6 +555,17 @@ export default {
             4: parseInt(await env.STATS_KV.get(`rating:value:4`) || "0"),
             5: parseInt(await env.STATS_KV.get(`rating:value:5`) || "0"),
           }
+        },
+        tutor: {
+          opens: parseInt(await env.STATS_KV.get(`event:error_tutor_opened`) || "0"),
+          messages: parseInt(await env.STATS_KV.get(`event:error_tutor_message_sent`) || "0"),
+          limit_reached: parseInt(await env.STATS_KV.get(`event:error_tutor_limit_reached`) || "0"),
+          unique_users: parseInt(await env.STATS_KV.get(`unique:error_tutor_users`) || "0"),
+          unique_message_users: parseInt(await env.STATS_KV.get(`unique:error_tutor_message_users`) || "0"),
+          feedback: {
+            yes: parseInt(await env.STATS_KV.get(`event:error_tutor_trial_feedback_yes`) || "0"),
+            no: parseInt(await env.STATS_KV.get(`event:error_tutor_trial_feedback_no`) || "0"),
+          },
         }
       };
 
@@ -449,16 +593,34 @@ export default {
 
     // Track Event Endpoint (POST /api/track-event)
     if (url.pathname === "/api/track-event" && request.method === "POST") {
-      const { event, visitorType, rating } = await request.json() as {
+      const { event, visitorType, visitorId, rating, liked } = await request.json() as {
         event: string;
         visitorType?: "new" | "returning";
+        visitorId?: string;
         rating?: number;
+        liked?: boolean;
       };
       if (event) {
         ctx.waitUntil((async () => {
           await incrementStat(env.STATS_KV, `event:${event}`);
           if (visitorType === "new" || visitorType === "returning") {
             await incrementStat(env.STATS_KV, `event:${event}:${visitorType}`);
+          }
+          if (event.startsWith("error_tutor") && visitorId) {
+            const tutorUserKey = `unique:error_tutor_users:${visitorId}`;
+            const tutorUserSeen = await env.STATS_KV.get(tutorUserKey);
+            if (!tutorUserSeen) {
+              await env.STATS_KV.put(tutorUserKey, "1");
+              await incrementStat(env.STATS_KV, `unique:error_tutor_users`);
+            }
+          }
+          if (event === "error_tutor_message_sent" && visitorId) {
+            const messageUserKey = `unique:error_tutor_message_users:${visitorId}`;
+            const messageUserSeen = await env.STATS_KV.get(messageUserKey);
+            if (!messageUserSeen) {
+              await env.STATS_KV.put(messageUserKey, "1");
+              await incrementStat(env.STATS_KV, `unique:error_tutor_message_users`);
+            }
           }
           if (event === "exam_rating" && Number.isInteger(rating) && rating! >= 1 && rating! <= 5) {
             await incrementStat(env.STATS_KV, `rating:value:${rating}`);
@@ -470,11 +632,40 @@ export default {
             await env.STATS_KV.put(`rating:sum`, nextSum.toString());
             await env.STATS_KV.put(`rating:avg`, (nextSum / nextCount).toFixed(2));
           }
+          if (event === "error_tutor_trial_feedback" && typeof liked === "boolean") {
+            await incrementStat(env.STATS_KV, liked ? `event:error_tutor_trial_feedback_yes` : `event:error_tutor_trial_feedback_no`);
+          }
         })());
       }
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json", ...corsHeaders() },
       });
+    }
+
+    // Tutor de errores (POST /api/tutor-error)
+    if (url.pathname === "/api/tutor-error" && request.method === "POST") {
+      try {
+        if (!env.OPENROUTER_API_KEY) {
+          throw new WorkerAppError(
+            "SERVER_MISCONFIG",
+            "Missing API Key for tutor",
+            "No se pudo consultar al tutor ahora mismo."
+          );
+        }
+
+        const body = await request.json() as TutorRequest;
+        const answer = await generateTutorAnswer(body, env);
+
+        return new Response(JSON.stringify({ answer }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders() },
+        });
+      } catch (error) {
+        const errorEvent = toErrorEvent(error);
+        return new Response(JSON.stringify(errorEvent), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders() },
+        });
+      }
     }
 
     // Existing Generate Endpoint
