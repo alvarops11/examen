@@ -6,6 +6,10 @@ export interface ExamQuestion {
   explanation: string;
 }
 
+export interface ErrorTutorResponse {
+  answer: string;
+}
+
 export interface ExamResponse {
   title: string;
   difficulty: string;
@@ -38,6 +42,7 @@ const VISITOR_LAST_SEEN_KEY = "visitor_last_seen_at";
 const VISITOR_VISIT_COUNT_KEY = "visitor_visit_count";
 const VISITOR_ACTIVE_DAYS_KEY = "visitor_active_days";
 const VISITOR_LAST_DAY_KEY = "last_visit";
+const ERROR_TUTOR_TIMEOUT_MS = 120000;
 
 function createVisitorId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -123,13 +128,13 @@ const getBaseUrl = () => {
 function getDefaultUserMessage(code?: string): string {
   switch (code) {
     case "RATE_LIMIT":
-      return "Ahora mismo se están generando demasiados exámenes. Vuelve a intentarlo en un momento.";
+      return "Ahora mismo se estÃƒÂ¡n generando demasiados exÃƒÂ¡menes. Vuelve a intentarlo en un momento.";
     case "EMPTY_CONTENT":
-      return "Añade más contenido antes de generar el examen.";
+      return "AÃƒÂ±ade mÃƒÂ¡s contenido antes de generar el examen.";
     case "CONTENT_TOO_SHORT":
-      return "El contenido parece demasiado breve para crear un examen útil. Añade más apuntes o un fragmento más completo.";
+      return "El contenido parece demasiado breve para crear un examen ÃƒÂºtil. AÃƒÂ±ade mÃƒÂ¡s apuntes o un fragmento mÃƒÂ¡s completo.";
     case "DOCUMENT_PROCESSING_FAILED":
-      return "No hemos podido aprovechar bien el contenido del documento. Prueba con otro fragmento o con unos apuntes más claros.";
+      return "No hemos podido aprovechar bien el contenido del documento. Prueba con otro fragmento o con unos apuntes mÃƒÂ¡s claros.";
     default:
       return "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.";
   }
@@ -165,7 +170,7 @@ export async function trackVisit(): Promise<void> {
 }
 
 /**
- * Obtiene las estadísticas del servidor
+ * Obtiene las estadÃƒÂ­sticas del servidor
  */
 export async function fetchStats(): Promise<any> {
   const workerUrl = getBaseUrl() + "/api/stats";
@@ -304,7 +309,7 @@ export async function generateExamWithOpenRouter(
         }
       } catch (error) {
         if (error instanceof ExamGenerationError) throw error;
-        console.error("Error al parsear línea final SSE:", error);
+        console.error("Error al parsear lÃƒÂ­nea final SSE:", error);
       }
     }
 
@@ -316,5 +321,63 @@ export async function generateExamWithOpenRouter(
   } catch (error) {
     console.error("Error generating exam:", error);
     throw error;
+  }
+}
+
+export async function askErrorTutor(
+  question: ExamQuestion,
+  userMessage: string,
+  userAnswerIndex: number | null
+): Promise<ErrorTutorResponse> {
+  const workerUrl = getBaseUrl() + "/api/tutor-error";
+  const visitorProfile = getVisitorProfile();
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), ERROR_TUTOR_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        question,
+        userMessage,
+        userAnswerIndex,
+        visitorType: visitorProfile.visitorType,
+        visitorId: visitorProfile.visitorId,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new ExamGenerationError(
+        data.userMessage || "No se pudo consultar al tutor ahora mismo.",
+        data.code,
+        data.retryable ?? true
+      );
+    }
+
+    if (!data?.answer || typeof data.answer !== "string") {
+      throw new ExamGenerationError(
+        "No se pudo obtener una respuesta util del tutor.",
+        "NO_RESULT",
+        true
+      );
+    }
+
+    return { answer: data.answer };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ExamGenerationError(
+        "El tutor esta tardando demasiado. Vuelve a intentarlo en un momento.",
+        "TIMEOUT",
+        true
+      );
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }

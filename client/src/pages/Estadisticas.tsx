@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, AreaChart, Area } from 'recharts';
-import { Users, BookOpen, Calendar, TrendingUp, Sparkles, Loader2, Clock, Target, FileDown, Brain, Zap, UserPlus, Repeat2, BarChart3, UserCheck } from "lucide-react";
+import { Users, BookOpen, Calendar, TrendingUp, Sparkles, Loader2, Clock, Target, FileDown, Brain, Zap, UserPlus, Repeat2, BarChart3, UserCheck, MessageCircleQuestion, ThumbsUp, ThumbsDown } from "lucide-react";
 
 export default function Estadisticas() {
     const [stats, setStats] = useState<any>(null);
@@ -63,6 +63,21 @@ export default function Estadisticas() {
         { score: 3, emoji: "😐", votes: stats?.feedback?.ratings?.[3] || 0 },
         { score: 4, emoji: "🙂", votes: stats?.feedback?.ratings?.[4] || 0 },
         { score: 5, emoji: "🤩", votes: stats?.feedback?.ratings?.[5] || 0 },
+    ];
+    const tutorOpens = stats?.tutor?.opens || 0;
+    const tutorMessages = stats?.tutor?.messages || 0;
+    const tutorLimitReached = stats?.tutor?.limit_reached || 0;
+    const tutorUniqueUsers = stats?.tutor?.unique_users || 0;
+    const tutorUniqueMessageUsers = stats?.tutor?.unique_message_users || 0;
+    const tutorYesVotes = stats?.tutor?.feedback?.yes || 0;
+    const tutorNoVotes = stats?.tutor?.feedback?.no || 0;
+    const tutorFeedbackVotes = tutorYesVotes + tutorNoVotes;
+    const tutorApprovalRate = tutorFeedbackVotes > 0 ? ((tutorYesVotes / tutorFeedbackVotes) * 100).toFixed(1) : "0.0";
+    const tutorUsageRate = uniqueVisitors > 0 ? ((tutorUniqueUsers / uniqueVisitors) * 100).toFixed(1) : "0.0";
+    const tutorAvgMessages = tutorUniqueMessageUsers > 0 ? (tutorMessages / tutorUniqueMessageUsers).toFixed(1) : "0.0";
+    const tutorFeedbackData = [
+        { label: "Sí", value: tutorYesVotes, icon: ThumbsUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+        { label: "No", value: tutorNoVotes, icon: ThumbsDown, color: "text-rose-600", bg: "bg-rose-50" },
     ];
 
     const mainStats = [
@@ -351,6 +366,115 @@ export default function Estadisticas() {
                                     </div>
                                 );
                             })}
+                        </div>
+                    </motion.div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"
+                    >
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <MessageCircleQuestion className="w-5 h-5 text-indigo-600" />
+                            Tutor de errores
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-3xl bg-indigo-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-indigo-500">Usuarios</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{tutorUniqueUsers}</div>
+                                <div className="mt-2 text-sm text-slate-500">{tutorUsageRate}% de navegadores únicos</div>
+                            </div>
+                            <div className="rounded-3xl bg-slate-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Consultas</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{tutorMessages}</div>
+                                <div className="mt-2 text-sm text-slate-500">{tutorAvgMessages} de media por usuario que pregunta</div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 space-y-4">
+                            <div>
+                                <div className="mb-2 flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Aperturas del tutor</span>
+                                    <span className="font-bold text-slate-900">{tutorOpens}</span>
+                                </div>
+                                <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(tutorUniqueUsers > 0 ? (tutorOpens / Math.max(tutorUniqueUsers, 1)) * 35 : 0, 100)}%` }}
+                                        transition={{ duration: 0.9 }}
+                                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="mb-2 flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Usuarios que preguntan</span>
+                                    <span className="font-bold text-slate-900">{tutorUniqueMessageUsers}</span>
+                                </div>
+                                <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(tutorUniqueUsers > 0 ? (tutorUniqueMessageUsers / tutorUniqueUsers) * 100 : 0, 100)}%` }}
+                                        transition={{ duration: 0.9 }}
+                                        className="h-full bg-gradient-to-r from-sky-500 to-indigo-500"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <div className="mb-2 flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Límite de prueba alcanzado</span>
+                                    <span className="font-bold text-slate-900">{tutorLimitReached}</span>
+                                </div>
+                                <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(tutorUniqueUsers > 0 ? (tutorLimitReached / tutorUniqueUsers) * 100 : 0, 100)}%` }}
+                                        transition={{ duration: 0.9 }}
+                                        className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100"
+                    >
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-indigo-600" />
+                            Encuesta del modo prueba
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-3xl bg-indigo-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-indigo-500">Aceptación</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{tutorApprovalRate}%</div>
+                                <div className="mt-2 text-sm text-slate-500">Porcentaje de respuestas positivas</div>
+                            </div>
+                            <div className="rounded-3xl bg-slate-50 p-6">
+                                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Votos</div>
+                                <div className="mt-2 text-4xl font-black text-slate-900">{tutorFeedbackVotes}</div>
+                                <div className="mt-2 text-sm text-slate-500">Feedback enviado al agotar la prueba</div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {tutorFeedbackData.map((item) => (
+                                <div key={item.label} className={`rounded-3xl p-5 ${item.bg}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">{item.label}</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-900">{item.value}</div>
+                                        </div>
+                                        <div className={`rounded-2xl p-3 ${item.color} bg-white`}>
+                                            <item.icon className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 </div>

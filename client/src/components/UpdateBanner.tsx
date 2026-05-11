@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const UPDATE_ID = "2026-04-exam-timer";
+const UPDATE_ID = "2026-05-error-tutor-trial";
 const STORAGE_KEY = `updateBannerDismissed:${UPDATE_ID}`;
 
 export default function UpdateBanner() {
@@ -39,10 +39,10 @@ export default function UpdateBanner() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">
-                  Actualizacion realizada
+                  Nueva mejora en prueba
                 </p>
                 <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Ya puedes realizar tus simulacros con un reloj integrado para controlar el tiempo de forma mas comoda.
+                  Ya puedes probar el Tutor de errores para consultar dudas sobre preguntas concretas al terminar tu examen.
                 </p>
               </div>
               <Button

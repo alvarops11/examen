@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3, ChevronLeft, ChevronRight, MessageCircleQuestion, Send, ThumbsUp, ThumbsDown, Bot, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
-import { generateExamWithOpenRouter, trackVisit, trackEvent } from "@/lib/geminiService";
+import { generateExamWithOpenRouter, trackVisit, trackEvent, askErrorTutor } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
 import { motion, AnimatePresence } from "framer-motion";
 import CookieBanner from "@/components/CookieBanner";
@@ -14,6 +14,8 @@ import UpdateBanner from "@/components/UpdateBanner";
 import { Link } from "wouter";
 import SEO from "@/components/SEO";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /**
  * Diseño: Neo-Academic Premium
@@ -36,6 +38,11 @@ interface ExamData {
   questions: ExamQuestion[];
 }
 
+interface TutorMessage {
+  role: "assistant" | "user";
+  content: string;
+}
+
 const CURSOS = ["1º", "2º", "3º", "4º", "Máster"];
 
 const STUDY_FACTS = [
@@ -48,6 +55,9 @@ const STUDY_FACTS = [
 ];
 
 const TIMER_PRESETS = [15, 30, 45, 60];
+const ERROR_TUTOR_MAX_CALLS = 3;
+const ERROR_TUTOR_USAGE_KEY = "error_tutor_usage_count";
+const ERROR_TUTOR_FEEDBACK_KEY = "error_tutor_feedback_sent";
 const EXAM_FEEDBACK_OPTIONS = [
   { score: 1, emoji: "😞", label: "Muy mala" },
   { score: 2, emoji: "🙁", label: "Mejorable" },
@@ -105,6 +115,12 @@ export default function Home() {
   const [showFeedbackSurvey, setShowFeedbackSurvey] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
+  const [errorTutorQuestionIndex, setErrorTutorQuestionIndex] = useState<number | null>(null);
+  const [errorTutorDraft, setErrorTutorDraft] = useState("");
+  const [errorTutorThreads, setErrorTutorThreads] = useState<Record<number, TutorMessage[]>>({});
+  const [errorTutorLoading, setErrorTutorLoading] = useState(false);
+  const [errorTutorUsageCount, setErrorTutorUsageCount] = useState(0);
+  const [errorTutorFeedbackSent, setErrorTutorFeedbackSent] = useState(false);
 
   // Juego de espera: Reacción
   const [score, setScore] = useState(0);
@@ -115,6 +131,20 @@ export default function Home() {
     const left = Math.floor(Math.random() * 70) + 15 + '%';
     setTargetPos({ top, left });
     setScore((s: number) => s + 1);
+  };
+
+  const getTutorUsageCount = () => {
+    if (typeof window === "undefined") return 0;
+    const stored = window.localStorage.getItem(ERROR_TUTOR_USAGE_KEY);
+    const parsed = Number.parseInt(stored || "0", 10);
+    return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0), ERROR_TUTOR_MAX_CALLS) : 0;
+  };
+
+  const incrementTutorUsageCount = () => {
+    const nextCount = Math.min(getTutorUsageCount() + 1, ERROR_TUTOR_MAX_CALLS);
+    window.localStorage.setItem(ERROR_TUTOR_USAGE_KEY, String(nextCount));
+    setErrorTutorUsageCount(nextCount);
+    return nextCount;
   };
 
   const applyTimerDuration = (minutes: number) => {
@@ -148,6 +178,12 @@ export default function Home() {
 
   useEffect(() => {
     trackVisit();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setErrorTutorUsageCount(getTutorUsageCount());
+    setErrorTutorFeedbackSent(window.localStorage.getItem(ERROR_TUTOR_FEEDBACK_KEY) === "1");
   }, []);
 
   // Rotar datos curiosos mientras carga
@@ -280,6 +316,14 @@ export default function Home() {
       setShowFeedbackSurvey(false);
       setFeedbackSubmitted(false);
       setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
+      setErrorTutorQuestionIndex(null);
+      setErrorTutorDraft("");
+      setErrorTutorThreads({});
+      setErrorTutorLoading(false);
+      setErrorTutorUsageCount(0);
+      setErrorTutorFeedbackSent(false);
+      window.localStorage.removeItem(ERROR_TUTOR_USAGE_KEY);
+      window.localStorage.removeItem(ERROR_TUTOR_FEEDBACK_KEY);
       toast.success("Examen generado correctamente");
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -348,6 +392,10 @@ export default function Home() {
     setShowFeedbackSurvey(false);
     setFeedbackSubmitted(false);
     setTimerSeconds(timerMode === "down" ? timerDurationSeconds : 0);
+    setErrorTutorQuestionIndex(null);
+    setErrorTutorDraft("");
+    setErrorTutorThreads({});
+    setErrorTutorLoading(false);
   };
 
   // Descargar PDF
@@ -379,6 +427,86 @@ export default function Home() {
     }
   };
 
+  const openErrorTutor = (questionIndex: number) => {
+    setErrorTutorQuestionIndex(questionIndex);
+    setErrorTutorDraft("");
+    setErrorTutorThreads((current) => {
+      if (current[questionIndex]) return current;
+      return {
+        ...current,
+        [questionIndex]: [
+          {
+            role: "assistant",
+            content: "Soy tu Tutor de errores. Puedes preguntarme por qué una opción es correcta, en qué te has podido confundir o cómo razonar mejor esta pregunta.",
+          },
+        ],
+      };
+    });
+    void trackEvent("error_tutor_opened");
+  };
+
+  const handleErrorTutorFeedback = async (liked: boolean) => {
+    if (errorTutorFeedbackSent || typeof window === "undefined") return;
+
+    try {
+      await trackEvent("error_tutor_trial_feedback", { liked });
+      window.localStorage.setItem(ERROR_TUTOR_FEEDBACK_KEY, "1");
+      setErrorTutorFeedbackSent(true);
+      toast.success("Gracias por compartir tu opinión");
+    } catch (error) {
+      console.error("Error tracking tutor feedback:", error);
+      toast.error("No se pudo registrar tu respuesta");
+    }
+  };
+
+  const handleSendErrorTutorMessage = async () => {
+    if (errorTutorQuestionIndex === null || !examen || errorTutorLoading) return;
+
+    const trimmedMessage = errorTutorDraft.trim();
+    if (!trimmedMessage) return;
+
+    if (errorTutorUsageCount >= ERROR_TUTOR_MAX_CALLS) {
+      toast.error("Has alcanzado el límite de consultas de esta prueba");
+      return;
+    }
+
+    const question = examen.questions[errorTutorQuestionIndex];
+    const userAnswerIndex = respuestas[errorTutorQuestionIndex];
+
+    setErrorTutorDraft("");
+    setErrorTutorLoading(true);
+    setErrorTutorThreads((current) => ({
+      ...current,
+      [errorTutorQuestionIndex]: [
+        ...(current[errorTutorQuestionIndex] || []),
+        { role: "user", content: trimmedMessage },
+      ],
+    }));
+
+    try {
+      const { answer } = await askErrorTutor(question, trimmedMessage, userAnswerIndex);
+      const nextUsageCount = incrementTutorUsageCount();
+      void trackEvent("error_tutor_message_sent");
+
+      setErrorTutorThreads((current) => ({
+        ...current,
+        [errorTutorQuestionIndex]: [
+          ...(current[errorTutorQuestionIndex] || []),
+          { role: "assistant", content: answer },
+        ],
+      }));
+
+      if (nextUsageCount >= ERROR_TUTOR_MAX_CALLS) {
+        void trackEvent("error_tutor_limit_reached");
+      }
+    } catch (error) {
+      console.error("Error consulting tutor:", error);
+      toast.error(error instanceof Error ? error.message : "No se pudo consultar al tutor");
+    } finally {
+      setErrorTutorLoading(false);
+    }
+  };
+
   const displayedTimer = formatTimer(timerSeconds);
   const timerGradientClass = timerMode === "down" && timerSeconds <= 300
     ? "from-rose-500 to-orange-500"
@@ -386,6 +514,10 @@ export default function Home() {
   const timerTextClass = timerMode === "down" && timerSeconds <= 300
     ? "text-rose-600"
     : "text-indigo-600";
+  const remainingTutorCalls = Math.max(0, ERROR_TUTOR_MAX_CALLS - errorTutorUsageCount);
+  const currentTutorThread = errorTutorQuestionIndex !== null
+    ? errorTutorThreads[errorTutorQuestionIndex] || []
+    : [];
 
   return (
     <div className="min-h-screen overflow-x-hidden relative flex flex-col">
@@ -1036,6 +1168,20 @@ export default function Home() {
                                   <p className="text-sm text-slate-700 leading-relaxed">
                                     {question.explanation}
                                   </p>
+                                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-xs font-medium text-slate-500">
+                                      Modo prueba: {remainingTutorCalls} de {ERROR_TUTOR_MAX_CALLS} consultas disponibles
+                                    </p>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => openErrorTutor(qIndex)}
+                                      className="rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                    >
+                                      <MessageCircleQuestion className="mr-2 h-4 w-4" />
+                                      Tutor de errores
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </motion.div>
@@ -1046,6 +1192,137 @@ export default function Home() {
                   </motion.div>
                 ))}
               </div>
+
+              <Dialog
+                open={errorTutorQuestionIndex !== null}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setErrorTutorQuestionIndex(null);
+                    setErrorTutorDraft("");
+                  }
+                }}
+              >
+                <DialogContent className="flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-[1.5rem] border-indigo-100 p-0 sm:max-w-2xl">
+                  <DialogHeader className="border-b border-slate-100 px-5 py-4 sm:px-6">
+                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <MessageCircleQuestion className="h-5 w-5 text-indigo-600" />
+                      Tutor de errores
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-slate-500">
+                      Resuelve dudas concretas sobre esta pregunta. Esta funcionalidad está en modo prueba.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 sm:px-6">
+                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">Consultas disponibles</span>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-indigo-700">
+                          {remainingTutorCalls} / {ERROR_TUTOR_MAX_CALLS}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 min-h-[220px] max-h-[34vh] flex-1 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-3 sm:min-h-[240px] sm:max-h-[36vh] sm:p-4 lg:max-h-[40vh]">
+                      {currentTutorThread.map((message, index) => (
+                        <div
+                          key={`${message.role}-${index}`}
+                          className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
+                        >
+                          <div
+                            className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                              message.role === "assistant"
+                                ? "bg-white text-slate-700"
+                                : "bg-indigo-600 text-white"
+                            }`}
+                          >
+                            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide opacity-80">
+                              {message.role === "assistant" ? (
+                                <>
+                                  <Bot className="h-3.5 w-3.5" />
+                                  Tutor
+                                </>
+                              ) : (
+                                <>
+                                  <UserIcon className="h-3.5 w-3.5" />
+                                  Tú
+                                </>
+                              )}
+                            </div>
+                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      <Textarea
+                        value={errorTutorDraft}
+                        onChange={(e) => setErrorTutorDraft(e.target.value)}
+                        placeholder={
+                          remainingTutorCalls > 0
+                            ? "Escribe tu duda sobre esta pregunta..."
+                            : "Has agotado las consultas del modo prueba."
+                        }
+                        disabled={errorTutorLoading || remainingTutorCalls === 0}
+                        className="min-h-[92px] resize-none rounded-2xl border-indigo-100"
+                      />
+
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-slate-500">
+                          Puedes preguntar por el razonamiento, la opción correcta o en qué te has podido confundir.
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={handleSendErrorTutorMessage}
+                          disabled={errorTutorLoading || remainingTutorCalls === 0 || !errorTutorDraft.trim()}
+                          className="rounded-xl btn-gradient"
+                        >
+                          {errorTutorLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                          Enviar
+                        </Button>
+                      </div>
+                    </div>
+
+                    {remainingTutorCalls === 0 && (
+                      <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold">Actualmente esta funcionalidad está en modo prueba.</p>
+                            <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
+                              Ya has usado las 3 consultas disponibles.
+                            </p>
+                          </div>
+                          {errorTutorFeedbackSent ? (
+                            <p className="text-sm font-medium text-amber-900/85">Gracias por tu opinión.</p>
+                          ) : (
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleErrorTutorFeedback(true)}
+                                className="h-9 rounded-xl border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+                              >
+                                <ThumbsUp className="mr-2 h-4 w-4" />
+                                Sí
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleErrorTutorFeedback(false)}
+                                className="h-9 rounded-xl border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
+                              >
+                                <ThumbsDown className="mr-2 h-4 w-4" />
+                                No
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Action Buttons */}
               <motion.div
@@ -1184,9 +1461,9 @@ export default function Home() {
                 </div>
                 <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
                   <div className="relative z-10">
-                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-xs">Lo que si puedes esperar</p>
-                    <p className="text-3xl font-black mb-4">Practica guiada</p>
-                    <p className="text-slate-400">Generacion de simulacros con tu propio material, correccion inmediata, explicaciones por pregunta y descarga en PDF para seguir repasando fuera de la plataforma.</p>
+                    <p className="text-indigo-400 font-bold mb-2 uppercase tracking-widest text-xs">Prueba de Eficacia</p>
+                    <p className="text-3xl font-black mb-4">+70%</p>
+                    <p className="text-slate-400">De mejora media en la retención detectada en usuarios que practican con tests IA frente a lectura pasiva.</p>
                   </div>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 </div>
