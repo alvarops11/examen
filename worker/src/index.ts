@@ -880,19 +880,37 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           const results = await runChunkTasksWithConcurrency(chunkTasks, chunkConcurrency);
           allQuestions = results.flat();
           if (allQuestions.length < numeroPreguntas && chunks.length > 0) {
-            const missingQuestions = numeroPreguntas - allQuestions.length;
-            const refillChunks = selectRepresentativeChunks(
-              [...chunks].sort((a, b) => b.length - a.length),
-              Math.min(chunks.length, Math.max(1, Math.ceil(missingQuestions / 2)))
-            );
-            const refillDistribution = distributeQuestionCounts(missingQuestions, refillChunks.length);
-
             sendSSE({ type: "log", message: `Ajustando el examen para completar las preguntas que faltan...` });
-            const refillTasks = refillChunks.map((chunkContent, i) => async () => (
-              generateQuestionsForChunk(chunkContent, refillDistribution[i] || 0, `refuerzo ${i + 1}`, chunks.length + i)
-            ));
-            const refillResults = await runChunkTasksWithConcurrency(refillTasks, Math.min(2, refillChunks.length));
-            allQuestions = allQuestions.concat(refillResults.flat());
+
+            let refillAttempts = 0;
+            let previousQuestionCount = allQuestions.length;
+
+            while (allQuestions.length < numeroPreguntas && refillAttempts < 3) {
+              const missingQuestions = numeroPreguntas - allQuestions.length;
+              const refillChunks = selectRepresentativeChunks(
+                [...chunks].sort((a, b) => b.length - a.length),
+                Math.min(chunks.length, Math.max(1, Math.ceil(missingQuestions / 2)))
+              );
+              const refillDistribution = distributeQuestionCounts(missingQuestions, refillChunks.length);
+
+              const refillTasks = refillChunks.map((chunkContent, i) => async () => (
+                generateQuestionsForChunk(
+                  chunkContent,
+                  refillDistribution[i] || 0,
+                  `refuerzo ${refillAttempts + 1}-${i + 1}`,
+                  chunks.length + (refillAttempts * refillChunks.length) + i
+                )
+              ));
+              const refillResults = await runChunkTasksWithConcurrency(refillTasks, Math.min(2, refillChunks.length));
+              allQuestions = allQuestions.concat(refillResults.flat());
+
+              if (allQuestions.length === previousQuestionCount) {
+                break;
+              }
+
+              previousQuestionCount = allQuestions.length;
+              refillAttempts++;
+            }
           }
           if (allQuestions.length > numeroPreguntas) {
             allQuestions = allQuestions.slice(0, numeroPreguntas);
