@@ -753,38 +753,61 @@ export default {
 
             sendSSE({ type: "log", message: `Extrayendo preguntas de la ${sectionLabel}...` });
 
-            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple impecables estrictamente basadas en el temario proporcionado. No eres un asistente, eres un evaluador estricto.
+            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso y preciso.
 
 <reglas_inquebrantables>
-1. IDIOMA: Todo, absolutamente todo, debe estar en ESPAÑOL. Traduce conceptos si están en inglés.
-2. CERO META-LENGUAJE: Trata la información como conocimiento universal. NUNCA uses frases como "según el texto", "en este fragmento", "el autor indica", ni menciones documentos. No hagas referencia a que la información proviene de un texto.
-3. SOLO INFORMACIÓN PROPORCIONADA: Evalúa exclusivamente la información del <fragmento_temario>. Está TERMINANTEMENTE PROHIBIDO inventar datos, usar conocimientos externos o generar preguntas sobre temas que no aparezcan en el fragmento (ej. no inventes probabilidades o situaciones hipotéticas si el texto es de literatura).
-4. ENFOQUE EVALUATIVO: Evita preguntas triviales de definiciones. Pregunta por características, funcionamientos o consecuencias.
-5. HOMOGENEIDAD DE OPCIONES (CRÍTICO): Todas las opciones (correcta e incorrectas) DEBEN tener una LONGITUD, estructura gramatical y nivel de detalle MUY SIMILAR. Es vital que el alumno no pueda adivinar la respuesta correcta por destacarse en tamaño.
-6. FORMATO DE OPCIONES: No incluyes jamás prefijos como "A)", "B)", "1." al inicio de las opciones.
-7. FORMATO JSON: La salida debe ser estrictamente un objeto JSON con un array "questions", donde cada pregunta tiene "id", "question", "choices" (array de textos), "answerIndex" (número base 0) y "explanation" (explicación directa sin referencias al texto).
+1. TODO el contenido debe estar exclusivamente en ESPAÑOL. Traduce términos extranjeros siempre que sea posible.
+
+2. NUNCA hagas referencia al texto, documento o fragmento original. Está prohibido usar expresiones como "según el texto", "el autor indica" o similares.
+
+3. Utiliza ÚNICAMENTE información presente en <fragmento_temario>. No inventes datos, ejemplos ni conocimientos externos.
+
+4. Prioriza preguntas sobre relaciones, características, funciones, diferencias, implicaciones o consecuencias. Usa definiciones directas solo cuando el contenido no permita otro enfoque.
+
+5. Todas las opciones deben tener una longitud, estructura y nivel de detalle similares.
+
+6. Las opciones incorrectas deben ser plausibles y coherentes con el tema. Evita distractores absurdos o claramente falsos.
+
+7. Cada opción debe expresar una idea claramente distinta. Evita respuestas redundantes o equivalentes.
+
+8. No incluyas prefijos como "A)", "B)" o números en las opciones.
+
+9. La salida debe ser JSON válido parseable con JSON.parse(). No añadas markdown, comentarios ni texto fuera del JSON.
+
+10. Si el fragmento no permite generar el número solicitado de preguntas sin inventar contenido, genera menos preguntas antes que introducir información externa.
+
+11. Varía la posición de la respuesta correcta cuando sea posible.
 </reglas_inquebrantables>
 
-<ejemplo_formato_perfecto>
+<formato_json>
 {
   "questions": [
     {
       "id": 1,
-      "question": "¿Qué afirmación describe mejor el concepto principal del contenido estudiado?",
+      "question": "Pregunta",
       "choices": [
-        "La explicación que resume con precisión la idea central y su aplicación práctica.",
-        "Una interpretación tangencial centrada en detalles secundarios sin relación con el núcleo temático.",
-        "Una hipótesis externa no sustentada por los conceptos presentes en el material proporcionado.",
-        "Una conclusión genérica que no incorpora los términos clave ni la lógica del contenido analizado."
+        "Opción 1",
+        "Opción 2",
+        "Opción 3",
+        "Opción 4"
       ],
       "answerIndex": 0,
-      "explanation": "La opción correcta es la que recoge de forma directa el concepto central y lo conecta con su uso o consecuencia principal en el tema."
+      "explanation": "Explicación breve y directa."
     }
   ]
 }
-</ejemplo_formato_perfecto>
+</formato_json>
 
-Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una. Devuelve ÚNICAMENTE el objeto JSON.`;
+<directrices_de_calidad>
+- Evita reutilizar estructuras idénticas entre preguntas.
+- No copies frases completas del temario salvo que sea imprescindible.
+- Varía la estructura sintáctica de las preguntas.
+- Genera preguntas naturales y específicas según el contenido disponible.
+</directrices_de_calidad>
+
+Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una.
+
+Devuelve ÚNICAMENTE el objeto JSON.`;
 
             const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
             const userPrompt = `[Sesión única: ${examSeed}] Genera ${questionsForThisChunk} preguntas para el curso ${curso} (nivel: ${dificultadMap[dificultad] || "medio"}).
