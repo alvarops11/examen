@@ -770,15 +770,15 @@ export default {
   "questions": [
     {
       "id": 1,
-      "question": "¿Qué característica define el inicio funcional del Neolítico?",
+      "question": "¿Qué afirmación describe mejor el concepto principal del contenido estudiado?",
       "choices": [
-        "El asentamiento poblacional y organización orientada hacia la práctica de la agricultura inicial.",
-        "El desarrollo tecnológico de armamento punzante orientado fundamentalmente hacia fines cinegéticos.",
-        "La fragmentación social acelerada dependiente del control de incipientes rutas de tránsito marítimo.",
-        "La rápida adopción de herramientas metalúrgicas dedicadas fundamentalmente al comercio de excedentes."
+        "La explicación que resume con precisión la idea central y su aplicación práctica.",
+        "Una interpretación tangencial centrada en detalles secundarios sin relación con el núcleo temático.",
+        "Una hipótesis externa no sustentada por los conceptos presentes en el material proporcionado.",
+        "Una conclusión genérica que no incorpora los términos clave ni la lógica del contenido analizado."
       ],
       "answerIndex": 0,
-      "explanation": "El Neolítico se define por la transición a una economía de producción enfocada sobre todo en las prácticas agrícolas continuas."
+      "explanation": "La opción correcta es la que recoge de forma directa el concepto central y lo conecta con su uso o consecuencia principal en el tema."
     }
   ]
 }
