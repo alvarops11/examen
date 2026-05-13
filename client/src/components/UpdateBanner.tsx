@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const UPDATE_ID = "2026-05-error-tutor-trial";
+const UPDATE_ID = "2026-05-examsphere-2-0";
 const STORAGE_KEY = `updateBannerDismissed:${UPDATE_ID}`;
 
 export default function UpdateBanner() {
@@ -32,17 +32,17 @@ export default function UpdateBanner() {
           transition={{ duration: 0.22 }}
           className="fixed right-4 bottom-4 z-50 max-w-sm"
         >
-          <div className="rounded-lg border border-emerald-200 bg-white shadow-xl">
+          <div className="rounded-lg border border-indigo-200 bg-white shadow-xl">
             <div className="flex items-start gap-3 p-4">
-              <div className="mt-0.5 rounded-md bg-emerald-50 p-2 text-emerald-600">
-                <CheckCircle2 className="h-4 w-4" />
+              <div className="mt-0.5 rounded-md bg-indigo-50 p-2 text-indigo-600">
+                <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">
-                  Nueva mejora en prueba
+                  Llega ExamSphere 2.0
                 </p>
                 <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Ya puedes probar el Tutor de errores para consultar dudas sobre preguntas concretas al terminar tu examen.
+                  Hemos actualizado nuestros modelos de IA con una generación más potente e inteligente y un control de calidad mucho más sólido.
                 </p>
               </div>
               <Button

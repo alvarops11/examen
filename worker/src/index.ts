@@ -32,8 +32,8 @@ interface GenerateRequest {
 }
 
 const EXAM_MODELS = [
-  "qwen/qwen3-next-80b-a3b-instruct:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
   "openrouter/free",
 ];
 
@@ -727,6 +727,11 @@ Ayuda al alumno a entender mejor esta pregunta y su error si lo hubo.`;
               { role: "user", content: userPrompt },
             ],
             temperature: 0.2,
+            provider: {
+              order: ["Amazon Bedrock", "Weights & Biases"],
+              ignore: ["SiliconFlow"],
+              allow_fallbacks: true,
+            },
           }),
         },
         env,
@@ -1145,7 +1150,9 @@ Evita preguntas:
 - donde ninguna opción responda exactamente a lo preguntado;
 - con opciones de longitud o detalle muy descompensados;
 - que repitan el mismo concepto con distinta redacción;
+- sobre la estructura del documento, índice, capítulos, secciones, subsecciones, apartados o numeración interna del contenido;
 - que copien frases largas del temario sin reformularlas.
+Evalúa conceptos, relaciones, implicaciones y comprensión del contenido, no la localización del contenido dentro del documento.
 </calidad_de_preguntas>
 
 <directrices_de_calidad>
@@ -1204,7 +1211,12 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                       { role: "system", content: systemPrompt },
                       { role: "user", content: userPrompt }
                     ],
-                    temperature: 0.1
+                    temperature: 0.1,
+                    provider: {
+                      order: ["Amazon Bedrock", "Weights & Biases"],
+                      ignore: ["SiliconFlow"],
+                      allow_fallbacks: true,
+                    },
                   })
                 }, env, currentModel, rotationOffset + attempts);
 
