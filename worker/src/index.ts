@@ -31,6 +31,12 @@ interface GenerateRequest {
   visitorId?: string;
 }
 
+const EXAM_MODELS = [
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "openrouter/free",
+];
+
 interface TutorRequest {
   question: ExamQuestion;
   userMessage: string;
@@ -189,6 +195,7 @@ function sanitizeQuestion(rawQuestion: any, expectedChoices: number): ExamQuesti
   if (!question || !explanation) return null;
   if (choices.length !== expectedChoices) return null;
   if (answerIndex < 0 || answerIndex >= choices.length) return null;
+  if (new Set(choices.map((choice) => choice.trim().toLowerCase())).size !== choices.length) return null;
 
   const correctChoice = choices[answerIndex];
   for (let i = choices.length - 1; i > 0; i--) {
@@ -205,10 +212,289 @@ function sanitizeQuestion(rawQuestion: any, expectedChoices: number): ExamQuesti
   };
 }
 
+function normalizeLineKey(line: string): string {
+  return line
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function preprocessTemario(raw: string): { text: string; removedLines: number; originalLines: number } {
+  const cleanedRaw = raw
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]+/g, " ");
+
+  const lines = cleanedRaw.split("\n");
+  const boilerplatePatterns = [
+    /^examsphere$/i,
+    /^ai powered learning$/i,
+    /^version corregida$/i,
+    /^pagina\s+\d+\s+de\s+\d+$/i
+  ];
+
+  const repeatedLineCount = new Map<string, number>();
+  let lastKeptKey = "";
+  let lastWasEmpty = false;
+  const kept: string[] = [];
+  let removedLines = 0;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      if (!lastWasEmpty) {
+        kept.push("");
+        lastWasEmpty = true;
+      }
+      continue;
+    }
+    lastWasEmpty = false;
+
+    const key = normalizeLineKey(line);
+    if (!key) {
+      removedLines++;
+      continue;
+    }
+
+    if (boilerplatePatterns.some((pattern) => pattern.test(key))) {
+      removedLines++;
+      continue;
+    }
+
+    // Evita ruido por repetición consecutiva exacta (muy común en OCR / slide extraction).
+    if (key === lastKeptKey) {
+      removedLines++;
+      continue;
+    }
+
+    const occurrences = (repeatedLineCount.get(key) || 0) + 1;
+    repeatedLineCount.set(key, occurrences);
+
+    const tokenCount = key.split(" ").filter(Boolean).length;
+    // Conservador: solo limita repeticiones excesivas de líneas cortas.
+    if (occurrences > 4 && key.length <= 40 && tokenCount <= 6) {
+      removedLines++;
+      continue;
+    }
+
+    kept.push(line);
+    lastKeptKey = key;
+  }
+
+  const text = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return {
+    text: text.length > 0 ? text : raw.trim(),
+    removedLines,
+    originalLines: lines.length
+  };
+}
+
 function sanitizeQuestions(rawQuestions: any[], expectedChoices: number): ExamQuestion[] {
   return rawQuestions
     .map((question) => sanitizeQuestion(question, expectedChoices))
     .filter((question): question is ExamQuestion => question !== null);
+}
+
+function normalizeText(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenSet(input: string): Set<string> {
+  return new Set(
+    normalizeText(input)
+      .split(" ")
+      .filter((t) => t.length >= 3)
+  );
+}
+
+function jaccardSimilarity(a: string, b: string): number {
+  const setA = tokenSet(a);
+  const setB = tokenSet(b);
+  if (setA.size === 0 || setB.size === 0) return 0;
+  let intersection = 0;
+  for (const token of setA) {
+    if (setB.has(token)) intersection++;
+  }
+  return intersection / (setA.size + setB.size - intersection);
+}
+
+function looksSpanish(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+  const commonSpanish = [" el ", " la ", " los ", " las ", " de ", " que ", " en ", " un ", " una ", " y ", " con ", " para ", " por "];
+  let hits = 0;
+  const padded = ` ${normalized} `;
+  for (const marker of commonSpanish) {
+    if (padded.includes(marker)) hits++;
+  }
+  return hits >= 2;
+}
+
+function referencesExternalVisualContext(text: string): boolean {
+  const normalized = normalizeText(text);
+  const bannedPatterns = [
+    "tabla mostrada",
+    "grafo mostrado",
+    "imagen mostrada",
+    "figura mostrada",
+    "grafico mostrado",
+    "diagrama mostrado",
+    "como se muestra",
+    "segun la tabla",
+    "segun el grafico",
+    "segun la figura",
+    "en la tabla",
+    "en el grafico",
+    "en la figura",
+    "en el diagrama",
+    "del ejemplo mostrado",
+    "del grafo anterior",
+    "de la figura anterior",
+    "anterior"
+  ];
+  return bannedPatterns.some((pattern) => normalized.includes(pattern));
+}
+
+function questionQualityGate(question: ExamQuestion): boolean {
+  // Reglas duras mínimas: mantener robustez sin bloquear demasiado.
+  if (referencesExternalVisualContext(question.question)) return false;
+  if (new Set(question.choices.map((choice) => normalizeText(choice))).size !== question.choices.length) return false;
+  return true;
+}
+
+function dedupeQuestions(questions: ExamQuestion[]): ExamQuestion[] {
+  const accepted: ExamQuestion[] = [];
+  for (const candidate of questions) {
+    const isDuplicate = accepted.some((existing) => (
+      normalizeText(existing.question) === normalizeText(candidate.question) ||
+      jaccardSimilarity(existing.question, candidate.question) >= 0.9
+    ));
+    if (!isDuplicate) accepted.push(candidate);
+  }
+  return accepted;
+}
+
+function questionSoftQualityScore(question: ExamQuestion): number {
+  let score = 0;
+  if (looksSpanish(question.question)) score += 1;
+  if (looksSpanish(question.explanation)) score += 1;
+  if (question.choices.every((choice) => looksSpanish(choice))) score += 1;
+  if (!referencesExternalVisualContext(question.question)) score += 1;
+  return score;
+}
+
+function computeRequestedQuestionCount(target: number): number {
+  const multiplier = target <= 10 ? 1.3 : target <= 20 ? 1.25 : 1.2;
+  return Math.max(target, Math.ceil(target * multiplier));
+}
+
+function computeMinimumAcceptable(target: number): number {
+  return Math.ceil(Math.max(target * 0.85, target - 3));
+}
+
+function containsOptionPrefix(text: string): boolean {
+  return /^\s*([A-Da-d][\)\.]|\d+[\)\.])\s+/.test(text);
+}
+
+function normalizeForLeakDetection(input: string): string {
+  return normalizeText(input)
+    .replace(/\binfinito\b/g, "∞")
+    .replace(/\binfinidad\b/g, "∞");
+}
+
+function extractNumbers(input: string): string[] {
+  const matches = input.match(/\b\d+(?:[.,]\d+)?\b/g);
+  return matches ? matches.map((m) => m.replace(",", ".")) : [];
+}
+
+function hasNoPathIntent(question: string): boolean {
+  const q = normalizeText(question);
+  return (
+    q.includes("no hay camino") ||
+    q.includes("no existe camino") ||
+    q.includes("inalcanzable") ||
+    q.includes("componentes conexas diferentes")
+  );
+}
+
+function hasInfinityChoice(choices: string[]): boolean {
+  return choices.some((choice) => {
+    const c = normalizeForLeakDetection(choice);
+    return c.includes("∞") || c.includes("infinito") || c.includes("infinidad");
+  });
+}
+
+function computeAnswerLeakage(question: string, choices: string[]): number {
+  const normalizedQuestion = normalizeForLeakDetection(question);
+  const questionNumbers = new Set(extractNumbers(normalizedQuestion));
+  const candidateChoices = choices
+    .map((choice) => normalizeForLeakDetection(choice))
+    .filter((c) => c.length >= 2);
+
+  const leakedChoices = candidateChoices.filter((choice) => normalizedQuestion.includes(choice));
+  let leakage = leakedChoices.length > 0 ? 1 : 0;
+
+  const numericOnlyChoices = candidateChoices.filter((choice) => /^\d+(?:\.\d+)?$/.test(choice));
+  if (numericOnlyChoices.length > 0) {
+    const numericInQuestion = numericOnlyChoices.filter((c) => questionNumbers.has(c));
+    if (numericInQuestion.length === 1) leakage += 2; // fuga numérica fuerte
+  }
+
+  return leakage;
+}
+
+function isTautologicalPattern(question: string): boolean {
+  const q = normalizeText(question);
+  const patterns = [
+    /si .* (dos|2) .* (cuantos|cantidad)/,
+    /si .* (tres|3) .* (cuantos|cantidad)/,
+    /la distancia .* es \d+(?:[.,]\d+)? .* cual .* distancia/,
+    /si .* (existen|hay) .* caminos .* cuantos/
+  ];
+  return patterns.some((p) => p.test(q));
+}
+
+function getHardRejectionReason(question: ExamQuestion, expectedChoices: number): string | null {
+  if (!question.question || !question.explanation) return "empty_fields";
+  if (!Array.isArray(question.choices) || question.choices.length !== expectedChoices) return "invalid_choice_count";
+  if (question.answerIndex < 0 || question.answerIndex >= question.choices.length) return "invalid_answer_index";
+  if (referencesExternalVisualContext(question.question)) return "external_context_dependency";
+  if (new Set(question.choices.map((choice) => normalizeText(choice))).size !== question.choices.length) return "duplicate_choices";
+  if (question.choices.some((choice) => containsOptionPrefix(choice))) return "dirty_choice_prefix";
+  if (hasNoPathIntent(question.question) && !hasInfinityChoice(question.choices)) return "no_path_without_infinity_choice";
+  return null;
+}
+
+function computeQuestionScore(question: ExamQuestion): number {
+  const normalizedQuestion = normalizeText(question.question);
+  const choiceLengths = question.choices.map((c) => normalizeText(c).length).filter((len) => len > 0);
+  const maxLen = choiceLengths.length > 0 ? Math.max(...choiceLengths) : 0;
+  const minLen = choiceLengths.length > 0 ? Math.min(...choiceLengths) : 0;
+  const hasTechnicalKeyword = /(kruskal|dijkstra|arbol recubridor|camino mas corto|distancia|grafo|componente conexa)/.test(normalizedQuestion);
+
+  let score = 0;
+  if (!referencesExternalVisualContext(question.question)) score += 2;
+  if (hasTechnicalKeyword) score += 2;
+  if (maxLen > 0 && minLen > 0 && (maxLen / minLen) <= 2.6) score += 1;
+  if (normalizedQuestion.length >= 55) score += 1;
+  if (referencesExternalVisualContext(question.question)) score -= 3;
+  if (question.question.length < 45) score -= 2;
+  if (question.choices.some((choice) => /^(si|no|verdadero|falso)$/i.test(choice.trim()))) score -= 2;
+  const leakage = computeAnswerLeakage(question.question, question.choices);
+  if (leakage >= 2) score -= 5;
+  else if (leakage === 1) score -= 3;
+  if (isTautologicalPattern(question.question)) score -= 4;
+  return score;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -343,6 +629,10 @@ async function fetchWithFailover(
     "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
     true
   );
+}
+
+function modelKey(model: string): string {
+  return encodeURIComponent(model);
 }
 
 export function normalizeTutorAnswer(text: string): string {
@@ -488,6 +778,24 @@ export default {
       const today = now.toISOString().split('T')[0];
       const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+      const modelStats = await Promise.all(EXAM_MODELS.map(async (model) => {
+        const key = modelKey(model);
+        const attempts = parseInt(await env.STATS_KV.get(`model:${key}:attempts`) || "0");
+        const success = parseInt(await env.STATS_KV.get(`model:${key}:success`) || "0");
+        const latencySum = parseInt(await env.STATS_KV.get(`model:${key}:latency_sum`) || "0");
+        const timeouts = parseInt(await env.STATS_KV.get(`model:${key}:timeouts`) || "0");
+        const fallbackUses = parseInt(await env.STATS_KV.get(`model:${key}:fallback_uses`) || "0");
+        const parseFailures = parseInt(await env.STATS_KV.get(`model:${key}:parse_failures`) || "0");
+        return {
+          model,
+          successRate: attempts > 0 ? Number(((success / attempts) * 100).toFixed(1)) : 0,
+          avgLatency: attempts > 0 ? Number((latencySum / attempts).toFixed(0)) : 0,
+          timeoutRate: attempts > 0 ? Number(((timeouts / attempts) * 100).toFixed(1)) : 0,
+          fallbackRate: attempts > 0 ? Number(((fallbackUses / attempts) * 100).toFixed(1)) : 0,
+          parseFailureRate: attempts > 0 ? Number(((parseFailures / attempts) * 100).toFixed(1)) : 0,
+        };
+      }));
+
       const stats = {
         visitors: {
           today: parseInt(await env.STATS_KV.get(`v:${today}`) || "0"),
@@ -566,7 +874,8 @@ export default {
             yes: parseInt(await env.STATS_KV.get(`event:error_tutor_trial_feedback_yes`) || "0"),
             no: parseInt(await env.STATS_KV.get(`event:error_tutor_trial_feedback_no`) || "0"),
           },
-        }
+        },
+        modelPerformance: modelStats
       };
 
       return new Response(JSON.stringify(stats), {
@@ -698,6 +1007,7 @@ export default {
 
           const body = await request.json() as GenerateRequest;
           const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario, visitorType } = body;
+          const normalizedTemario = preprocessTemario(temario || "");
 
           if (!temario || !temario.trim()) {
             sendSSE(toErrorEvent(new WorkerAppError(
@@ -709,7 +1019,7 @@ export default {
             return;
           }
 
-          if (temario.trim().length < 120) {
+          if (normalizedTemario.text.trim().length < 120) {
             sendSSE(toErrorEvent(new WorkerAppError(
               "CONTENT_TOO_SHORT",
               "Temario demasiado breve",
@@ -726,22 +1036,36 @@ export default {
           };
 
           sendSSE({ type: "log", message: `Preparando tu examen de nivel ${dificultad}...` });
+          if (normalizedTemario.removedLines > 0) {
+            sendSSE({
+              type: "log",
+              message: `Se ha limpiado ruido del temario (${normalizedTemario.removedLines} líneas repetidas o de formato).`
+            });
+          }
 
-          const allChunks = splitText(temario, 5500);
+          const targetQuestions = numeroPreguntas;
+          const requestedQuestions = computeRequestedQuestionCount(targetQuestions);
+          const minimumAcceptable = computeMinimumAcceptable(targetQuestions);
+
+          const allChunks = splitText(normalizedTemario.text, 5500);
           const useCompactMode = allChunks.length >= 18;
           const chunks = useCompactMode
-            ? selectCompactChunks(allChunks, numeroPreguntas)
+            ? selectCompactChunks(allChunks, requestedQuestions)
             : selectRepresentativeChunks(allChunks, 12);
-          const chunkConcurrency = useCompactMode ? 2 : (chunks.length >= 8 ? 2 : 3);
+          const chunkConcurrency = useCompactMode
+            ? 3
+            : Math.min(4, Math.max(2, chunks.length >= 10 ? 4 : 3));
           if (useCompactMode) {
             sendSSE({ type: "log", message: `Documento extenso detectado: se ha optimizado el anÃ¡lisis para evitar bloqueos.` });
           }
+          sendSSE({ type: "log", message: `Objetivo: ${targetQuestions} preguntas. Generación con buffer: ${requestedQuestions}.` });
           sendSSE({ type: "log", message: `Analizando el contenido compartido (${chunks.length} secciones)...` });
 
           let allQuestions: ExamQuestion[] = [];
           const chunkFailureReasons: string[] = [];
+          const discardMetrics: Record<string, number> = {};
 
-          const initialDistribution = distributeQuestionCounts(numeroPreguntas, chunks.length);
+          const initialDistribution = distributeQuestionCounts(requestedQuestions, chunks.length);
 
           const generateQuestionsForChunk = async (
             chunkContent: string,
@@ -753,30 +1077,43 @@ export default {
 
             sendSSE({ type: "log", message: `Extrayendo preguntas de la ${sectionLabel}...` });
 
-            const systemPrompt = `Eres un profesor universitario experto en evaluación. Tu objetivo es generar preguntas de opción múltiple estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso y preciso.
+            const systemPrompt = `Eres un profesor experto en evaluación. Tu objetivo es generar preguntas de opción múltiple de calidad, estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso, claro y preciso.
 
 <reglas_inquebrantables>
-1. TODO el contenido debe estar exclusivamente en ESPAÑOL. Traduce términos extranjeros siempre que sea posible.
+1. Todo el contenido debe estar exclusivamente en ESPAÑOL.
 
-2. NUNCA hagas referencia al texto, documento o fragmento original. Está prohibido usar expresiones como "según el texto", "el autor indica" o similares.
+2. Usa ÚNICAMENTE información presente en <fragmento_temario>. No inventes datos, cifras, nombres, fechas, ejemplos concretos, resultados, casos ni conocimientos externos.
 
-3. Utiliza ÚNICAMENTE información presente en <fragmento_temario>. No inventes datos, ejemplos ni conocimientos externos.
+3. Puedes crear mini-casos SOLO si son conceptuales, coherentes con el temario y no introducen datos concretos nuevos no presentes en el fragmento.
 
-4. Prioriza preguntas sobre relaciones, características, funciones, diferencias, implicaciones o consecuencias. Usa definiciones directas solo cuando el contenido no permita otro enfoque.
+4. Cada pregunta debe ser AUTOSUFICIENTE: el alumno debe poder responderla usando únicamente el enunciado visible y sus opciones.
 
-5. Todas las opciones deben tener una longitud, estructura y nivel de detalle similares.
+5. Si una pregunta requiere calcular, identificar, comparar o recordar un dato concreto, el enunciado debe incluir todos los datos necesarios para resolverla.
 
-6. Las opciones incorrectas deben ser plausibles y coherentes con el tema. Evita distractores absurdos o claramente falsos.
+6. Está prohibido referenciar contenido externo al enunciado con expresiones como:
+"según el texto", "según el fragmento", "según el documento", "según la tabla", "según la imagen", "según el gráfico", "según el ejemplo", "en el ejemplo", "en el caso anterior", "como se muestra", "como aparece", "en la figura", "en el enunciado", "en el apartado", "en el párrafo".
 
-7. Cada opción debe expresar una idea claramente distinta. Evita respuestas redundantes o equivalentes.
+7. Prohibido crear preguntas cuya respuesta aparezca literalmente en el propio enunciado de forma trivial.
 
-8. No incluyas prefijos como "A)", "B)" o números en las opciones.
+8. Prioriza preguntas sobre relaciones, características, funciones, diferencias, causas, consecuencias, implicaciones, aplicaciones o razonamiento. Usa definiciones directas solo cuando el contenido no permita otro enfoque.
 
-9. La salida debe ser JSON válido parseable con JSON.parse(). No añadas markdown, comentarios ni texto fuera del JSON.
+9. Todas las opciones deben tener longitud, estructura y nivel de detalle similares.
 
-10. Si el fragmento no permite generar el número solicitado de preguntas sin inventar contenido, genera menos preguntas antes que introducir información externa.
+10. Las opciones incorrectas deben ser plausibles y coherentes con el tema. Evita distractores absurdos o claramente falsos.
 
-11. Varía la posición de la respuesta correcta cuando sea posible.
+11. Cada opción debe expresar una idea claramente distinta. Evita opciones redundantes, equivalentes o parcialmente duplicadas.
+
+12. Solo debe existir una respuesta correcta clara.
+
+13. Las opciones deben responder exactamente a lo que pregunta el enunciado.
+
+14. No incluyas prefijos como "A)", "B)", números o viñetas dentro de las opciones.
+
+15. La salida debe ser JSON válido parseable con JSON.parse(). No añadas markdown, comentarios ni texto fuera del JSON.
+
+16. Si el fragmento no permite generar el número solicitado de preguntas sin inventar contenido o bajar la calidad, genera menos preguntas.
+
+17. Varía la posición de la respuesta correcta cuando sea posible.
 </reglas_inquebrantables>
 
 <formato_json>
@@ -798,15 +1135,30 @@ export default {
 }
 </formato_json>
 
+<calidad_de_preguntas>
+Evita preguntas:
+- demasiado obvias o triviales;
+- tautológicas;
+- cuya respuesta esté contenida literalmente en la pregunta;
+- que dependan de una imagen, tabla, gráfico, ejemplo o contexto externo no incluido;
+- donde varias opciones puedan considerarse correctas;
+- donde ninguna opción responda exactamente a lo preguntado;
+- con opciones de longitud o detalle muy descompensados;
+- que repitan el mismo concepto con distinta redacción;
+- que copien frases largas del temario sin reformularlas.
+</calidad_de_preguntas>
+
 <directrices_de_calidad>
+- Genera preguntas naturales, claras y específicas según el contenido disponible.
 - Evita reutilizar estructuras idénticas entre preguntas.
-- No copies frases completas del temario salvo que sea imprescindible.
 - Varía la estructura sintáctica de las preguntas.
-- Genera preguntas naturales y específicas según el contenido disponible.
+- No copies frases completas del temario salvo que sea imprescindible.
+- Mantén explicaciones breves, concretas y justificadas.
+- Si usas datos concretos, incluye dentro del enunciado todos los datos necesarios para responder sin mirar nada externo.
 </directrices_de_calidad>
 
-Genera exactamente ${questionsForThisChunk} preguntas con ${numeroRespuestas || 4} opciones cada una.
-
+Genera HASTA ${questionsForThisChunk} preguntas válidas con ${numeroRespuestas || 4} opciones cada una.
+Prioriza calidad, autosuficiencia y claridad sobre cantidad.
 Devuelve ÚNICAMENTE el objeto JSON.`;
 
             const examSeed = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
@@ -823,17 +1175,20 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             let chunkQuestions: ExamQuestion[] = [];
             let chunkLastError = "";
 
-            const models = [
-              "google/gemma-3-12b-it:free",
-              "qwen/qwen3.6-plus:free",
-              "openrouter/free"
-            ];
+            const models = EXAM_MODELS;
 
-            while (attempts < models.length && !success) {
+            const maxModelAttempts = models.length; // principal + 2 fallbacks
+            while (attempts < maxModelAttempts && !success) {
               try {
                 if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
                 const currentModel = models[attempts];
+                const currentModelKey = modelKey(currentModel);
+                const modelAttemptStart = Date.now();
+                await incrementStat(env.STATS_KV, `model:${currentModelKey}:attempts`);
+                if (attempts > 0) {
+                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:fallback_uses`);
+                }
                 sendSSE({ type: "log", message: `Refinando la ${sectionLabel} para mayor calidad...` });
 
                 const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
@@ -873,14 +1228,25 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                 if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
                   chunkQuestions = sanitizeQuestions(parsed.questions, numeroRespuestas || 4);
                   if (chunkQuestions.length === 0) {
+                    await incrementStat(env.STATS_KV, `model:${currentModelKey}:parse_failures`);
                     throw new Error("Invalid generated questions");
                   }
+                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:success`);
+                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:latency_sum`, Date.now() - modelAttemptStart);
                   success = true;
                   sendSSE({ type: "log", message: `${sectionLabel.charAt(0).toUpperCase() + sectionLabel.slice(1)} lista.` });
                 } else {
+                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:parse_failures`);
                   throw new Error("Invalid JSON structure");
                 }
               } catch (e: any) {
+                const currentModel = models[attempts];
+                if (currentModel) {
+                  const currentModelKey = modelKey(currentModel);
+                  if ((e?.message || "").toLowerCase().includes("timeout")) {
+                    await incrementStat(env.STATS_KV, `model:${currentModelKey}:timeouts`);
+                  }
+                }
                 chunkLastError = e.message;
                 attempts++;
               }
@@ -902,45 +1268,60 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           console.log(`[Worker] Procesando ${chunks.length} fragmentos con concurrencia ${chunkConcurrency}...`);
           const results = await runChunkTasksWithConcurrency(chunkTasks, chunkConcurrency);
           allQuestions = results.flat();
-          if (allQuestions.length < numeroPreguntas && chunks.length > 0) {
-            sendSSE({ type: "log", message: `Ajustando el examen para completar las preguntas que faltan...` });
+          const rankQuestions = (questions: ExamQuestion[]) => {
+            const deduped = dedupeQuestions(questions);
+            const accepted: Array<{ q: ExamQuestion; score: number }> = [];
 
-            let refillAttempts = 0;
-            let previousQuestionCount = allQuestions.length;
-
-            while (allQuestions.length < numeroPreguntas && refillAttempts < 3) {
-              const missingQuestions = numeroPreguntas - allQuestions.length;
-              const refillChunks = selectRepresentativeChunks(
-                [...chunks].sort((a, b) => b.length - a.length),
-                Math.min(chunks.length, Math.max(1, Math.ceil(missingQuestions / 2)))
-              );
-              const refillDistribution = distributeQuestionCounts(missingQuestions, refillChunks.length);
-
-              const refillTasks = refillChunks.map((chunkContent, i) => async () => (
-                generateQuestionsForChunk(
-                  chunkContent,
-                  refillDistribution[i] || 0,
-                  `refuerzo ${refillAttempts + 1}-${i + 1}`,
-                  chunks.length + (refillAttempts * refillChunks.length) + i
-                )
-              ));
-              const refillResults = await runChunkTasksWithConcurrency(refillTasks, Math.min(2, refillChunks.length));
-              allQuestions = allQuestions.concat(refillResults.flat());
-
-              if (allQuestions.length === previousQuestionCount) {
-                break;
+            for (const q of deduped) {
+              const hardReason = getHardRejectionReason(q, numeroRespuestas || 4);
+              if (hardReason) {
+                discardMetrics[hardReason] = (discardMetrics[hardReason] || 0) + 1;
+                continue;
               }
-
-              previousQuestionCount = allQuestions.length;
-              refillAttempts++;
+              accepted.push({ q, score: computeQuestionScore(q) });
             }
-          }
-          if (allQuestions.length > numeroPreguntas) {
-            allQuestions = allQuestions.slice(0, numeroPreguntas);
-          }
-          console.log(`[Worker] GeneraciÃ³n completada. Total preguntas: ${allQuestions.length}`);
 
-          if (allQuestions.length === 0) {
+            accepted.sort((a, b) => b.score - a.score);
+            return accepted;
+          };
+
+          let ranked = rankQuestions(allQuestions);
+          let selected = ranked.slice(0, targetQuestions).map((entry) => entry.q);
+
+          const maxRepairRounds = useCompactMode ? 2 : 1;
+          let repairRound = 0;
+          while (selected.length < targetQuestions && repairRound < maxRepairRounds && chunks.length > 0) {
+            const missingQuestions = targetQuestions - selected.length;
+            sendSSE({ type: "log", message: `Refuerzo limitado (${repairRound + 1}/${maxRepairRounds}): faltan ${missingQuestions} preguntas.` });
+
+            const refillChunks = selectRepresentativeChunks(
+              [...chunks].sort((a, b) => b.length - a.length),
+              Math.min(chunks.length, Math.max(1, Math.ceil(missingQuestions / 2)))
+            );
+            const refillDistribution = distributeQuestionCounts(missingQuestions, refillChunks.length);
+            const refillTasks = refillChunks.map((chunkContent, i) => async () => (
+              generateQuestionsForChunk(
+                chunkContent,
+                refillDistribution[i] || 0,
+                `refuerzo ${repairRound + 1}-${i + 1}`,
+                chunks.length + 200 + (repairRound * refillChunks.length) + i
+              )
+            ));
+            // Repair secuencial para evitar picos de subrequests.
+            for (const refillTask of refillTasks) {
+              const refillChunkQuestions = await refillTask();
+              allQuestions = allQuestions.concat(refillChunkQuestions);
+            }
+            ranked = rankQuestions(allQuestions);
+            selected = ranked.slice(0, targetQuestions).map((entry) => entry.q);
+            repairRound++;
+          }
+
+          allQuestions = selected;
+          console.log(`[Worker] GeneraciÃ³n completada. Total preguntas seleccionadas: ${allQuestions.length}`);
+          console.log(`[Worker] Descartes por validación: ${JSON.stringify(discardMetrics)}`);
+
+          if (allQuestions.length < minimumAcceptable) {
             console.error("[Worker] Error: No se generÃ³ ninguna pregunta.");
             const failureText = chunkFailureReasons.join(" | ");
             if (failureText.includes("Rate limit")) {
@@ -960,14 +1341,14 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             } else {
               sendSSE(toErrorEvent(new WorkerAppError(
                 "NO_QUESTIONS_GENERATED",
-                failureText || "No se pudieron generar preguntas.",
-                "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
+                failureText || `No se alcanzó el umbral mínimo de calidad (${allQuestions.length}/${targetQuestions}).`,
+                `No se pudieron generar suficientes preguntas de calidad con el temario aportado (${allQuestions.length}/${targetQuestions}).`,
                 true
               )));
             }
           } else {
             const finalQuestions = allQuestions
-              .slice(0, numeroPreguntas)
+              .slice(0, targetQuestions)
               .map((q, index) => ({ ...q, id: index + 1 }));
             const responseData: ExamResponse = {
               title: `Examen - ${curso}`,

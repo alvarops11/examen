@@ -139,6 +139,7 @@ export default function Estadisticas() {
         { name: 'PDF Normal', value: stats?.events?.pdf_normal || 0 },
         { name: 'PDF Corregido', value: stats?.events?.pdf_corrected || 0 },
     ];
+    const modelPerformanceRows = Array.isArray(stats?.modelPerformance) ? stats.modelPerformance : [];
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -308,6 +309,46 @@ export default function Estadisticas() {
                             </div>
                         ))}
                     </div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-12 overflow-x-auto"
+                >
+                    <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-indigo-600" />
+                        Rendimiento por modelo
+                    </h3>
+                    <table className="w-full min-w-[760px] border border-slate-200 rounded-md overflow-hidden">
+                        <thead className="bg-slate-100">
+                            <tr>
+                                <th className="text-left text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-r border-slate-200">Model</th>
+                                <th className="text-right text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-r border-slate-200">successRate</th>
+                                <th className="text-right text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-r border-slate-200">avgLatency (ms)</th>
+                                <th className="text-right text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-r border-slate-200">timeoutRate</th>
+                                <th className="text-right text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-r border-slate-200">fallbackRate</th>
+                                <th className="text-right text-xs font-bold uppercase tracking-wide text-slate-600 px-3 py-2 border-b border-slate-200">parseFailureRate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {modelPerformanceRows.map((row: any) => (
+                                <tr key={row.model} className="odd:bg-white even:bg-slate-50">
+                                    <td className="px-3 py-2 text-sm text-slate-800 border-b border-r border-slate-200">{row.model}</td>
+                                    <td className="px-3 py-2 text-sm text-slate-800 text-right border-b border-r border-slate-200">{Number(row.successRate || 0).toFixed(1)}%</td>
+                                    <td className="px-3 py-2 text-sm text-slate-800 text-right border-b border-r border-slate-200">{Number(row.avgLatency || 0).toFixed(0)}</td>
+                                    <td className="px-3 py-2 text-sm text-slate-800 text-right border-b border-r border-slate-200">{Number(row.timeoutRate || 0).toFixed(1)}%</td>
+                                    <td className="px-3 py-2 text-sm text-slate-800 text-right border-b border-r border-slate-200">{Number(row.fallbackRate || 0).toFixed(1)}%</td>
+                                    <td className="px-3 py-2 text-sm text-slate-800 text-right border-b border-slate-200">{Number(row.parseFailureRate || 0).toFixed(1)}%</td>
+                                </tr>
+                            ))}
+                            {modelPerformanceRows.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-3 py-4 text-sm text-slate-500 text-center">Sin datos de modelos todavía.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </motion.div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
