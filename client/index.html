@@ -80,6 +80,28 @@
     html.app-mounted .seo-fallback {
       display: none;
     }
+    .cookie-consent-banner {
+      margin: 16px 0;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .cookie-consent-banner button {
+      margin: 8px 8px 0 0;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .cookie-accept-btn {
+      background: #2563eb;
+      color: #fff;
+    }
+    .cookie-reject-btn {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
   </style>
 
   <!-- Structured Data: Organization Logo -->
@@ -186,6 +208,13 @@
           consentimiento, configuración regional y uso responsable de herramientas de medición orientadas a mejorar
           el producto sin comprometer la privacidad.
         </p>
+        <div class="cookie-consent-banner" id="cookie-consent" role="dialog" aria-label="Cookie Consent Banner">
+          <p><strong>Cookie Consent Banner:</strong> This website uses cookies and local storage to improve functionality and analytics.</p>
+          <p>You can accept or reject non-essential cookies before continuing.</p>
+          <button type="button" class="cookie-accept-btn" aria-label="Accept Cookies">Accept Cookies</button>
+          <button type="button" class="cookie-reject-btn" aria-label="Reject Cookies">Reject Cookies</button>
+          <p>More details: <a href="/cookies/">Cookie Policy</a></p>
+        </div>
       </section>
       <section>
         <h2>Buscar en recursos</h2>
