@@ -194,7 +194,7 @@ export default function Blog() {
                     <div className="relative z-10 max-w-2xl">
                         <h3 className="text-3xl font-black mb-6">¿Quieres elevar tu promedio?</h3>
                         <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-                            Estamos preparando una guía completa sobre cómo estudiar mejor para finales, parciales y oposiciones. Únete a una comunidad de estudiantes que quiere sacar más partido a su tiempo con ayuda de la IA.
+                            Recibe consejos prácticos de estudio y novedades del blog en tu correo. Sin spam y con enfoque directo en técnicas útiles para aprobar mejor.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <input
@@ -203,7 +203,7 @@ export default function Blog() {
                                 className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                             />
                             <button className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-slate-100 transition-colors">
-                                Próximamente
+                                Quiero recibir novedades
                             </button>
                         </div>
                     </div>

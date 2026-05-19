@@ -159,6 +159,7 @@ export default function Estadisticas() {
                 title="Estadísticas de Uso"
                 description="Métricas en tiempo real sobre el uso de nuestra IA: exámenes generados, niveles académicos y más."
                 canonicalPath="/estadisticas"
+                noindex
             />
             <Header />
 

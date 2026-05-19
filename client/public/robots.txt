@@ -2,5 +2,8 @@
 
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /404
+Disallow: /estadisticas
 
 Sitemap: https://examsphere.me/sitemap.xml

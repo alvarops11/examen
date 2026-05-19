@@ -636,6 +636,14 @@ function corsHeaders() {
   };
 }
 
+function apiHeaders(extra?: Record<string, string>) {
+  return {
+    ...corsHeaders(),
+    "X-Robots-Tag": "noindex, nofollow",
+    ...(extra || {}),
+  };
+}
+
 // Helper for stats tracking
 async function incrementStat(kv: KVNamespace, key: string, amount: number = 1) {
   try {
@@ -981,7 +989,7 @@ export default {
       };
 
       return new Response(JSON.stringify(stats), {
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
+        headers: apiHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -998,7 +1006,7 @@ export default {
         }
       })());
       return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
+        headers: apiHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -1049,7 +1057,7 @@ export default {
         })());
       }
       return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders() },
+        headers: apiHeaders({ "Content-Type": "application/json" }),
       });
     }
 
@@ -1068,20 +1076,20 @@ export default {
         const answer = await generateTutorAnswer(body, env);
 
         return new Response(JSON.stringify({ answer }), {
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
+          headers: apiHeaders({ "Content-Type": "application/json" }),
         });
       } catch (error) {
         const errorEvent = toErrorEvent(error);
         return new Response(JSON.stringify(errorEvent), {
           status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders() },
+          headers: apiHeaders({ "Content-Type": "application/json" }),
         });
       }
     }
 
     // Existing Generate Endpoint
     if (request.method !== "POST") {
-      return new Response("Method not allowed", { status: 405, headers: corsHeaders() });
+      return new Response("Method not allowed", { status: 405, headers: apiHeaders() });
     }
 
     const startTime = Date.now();
@@ -1640,6 +1648,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
+        "X-Robots-Tag": "noindex, nofollow",
         ...corsHeaders()
       },
     });

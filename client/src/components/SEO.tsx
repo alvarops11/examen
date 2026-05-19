@@ -5,13 +5,14 @@ interface SEOProps {
     description?: string;
     canonicalPath?: string;
     jsonLd?: object;
+    noindex?: boolean;
 }
 
 const DEFAULT_TITLE = "Generador de exámenes tipo test con IA | ExamSphere";
 const DEFAULT_DESCRIPTION = "Crea exámenes tipo test con IA a partir de tus apuntes en segundos. Personaliza dificultad, número de preguntas y temas. Ideal para estudiar y repasar mejor.";
 const BASE_URL = "https://examsphere.me";
 
-export default function SEO({ title, description, canonicalPath, jsonLd }: SEOProps) {
+export default function SEO({ title, description, canonicalPath, jsonLd, noindex = false }: SEOProps) {
     useEffect(() => {
         // Update title
         document.title = title ? `${title} | ExamSphere` : DEFAULT_TITLE;
@@ -45,6 +46,15 @@ export default function SEO({ title, description, canonicalPath, jsonLd }: SEOPr
         const ogUrl = document.querySelector('meta[property="og:url"]');
         if (ogUrl) ogUrl.setAttribute("content", url);
 
+        // Update robots directive when a page should not be indexed
+        let robotsMeta = document.querySelector('meta[name="robots"]');
+        if (!robotsMeta) {
+            robotsMeta = document.createElement("meta");
+            robotsMeta.setAttribute("name", "robots");
+            document.head.appendChild(robotsMeta);
+        }
+        robotsMeta.setAttribute("content", noindex ? "noindex,follow,max-image-preview:large" : "index,follow,max-image-preview:large");
+
         // Update JSON-LD
         let scriptTag = document.querySelector('script[type="application/ld+json"]');
         if (jsonLd) {
@@ -60,7 +70,7 @@ export default function SEO({ title, description, canonicalPath, jsonLd }: SEOPr
             scriptTag.remove();
         }
 
-    }, [title, description, canonicalPath, jsonLd]);
+    }, [title, description, canonicalPath, jsonLd, noindex]);
 
     return null;
 }
