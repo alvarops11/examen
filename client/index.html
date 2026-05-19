@@ -38,6 +38,49 @@
   <meta name="theme-color" content="#0B1220" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/logo.png" />
+  <style>
+    .seo-fallback {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 8px;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #0f172a;
+      line-height: 1.6;
+      background: #fff;
+    }
+    .seo-fallback nav a,
+    .seo-fallback footer a {
+      margin-right: 12px;
+    }
+    .seo-fallback img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+    .seo-fallback form {
+      margin: 14px 0;
+    }
+    .seo-fallback input[type="search"] {
+      width: min(420px, 95%);
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .seo-fallback button {
+      margin-left: 8px;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #4f46e5;
+      color: #fff;
+      cursor: pointer;
+    }
+    html.app-mounted .seo-fallback {
+      display: none;
+    }
+  </style>
 
   <!-- Structured Data: Organization Logo -->
   <script type="application/ld+json">
@@ -67,6 +110,74 @@
 
 
 <body>
+  <header class="seo-fallback">
+    <nav aria-label="Navegación principal">
+      <a href="/">Inicio</a>
+      <a href="/blog/">Blog</a>
+      <a href="/como-usar/">Cómo usar</a>
+      <a href="/faq/">FAQ</a>
+      <a href="/contacto/">Contacto</a>
+      <a href="/sobre-nosotros/">Sobre nosotros</a>
+      <a href="/privacidad/">Privacidad</a>
+      <a href="/aviso-legal/">Aviso legal</a>
+      <a href="/cookies/">Cookies</a>
+    </nav>
+  </header>
+  <main class="seo-fallback" id="seo-fallback">
+    <article>
+      <h1>ExamSphere: plataforma para crear exámenes tipo test con IA y estudiar mejor</h1>
+      <p>
+        ExamSphere es una herramienta educativa diseñada para estudiantes universitarios y opositores
+        que quieren convertir sus apuntes en práctica real. Permite generar exámenes tipo test personalizados
+        a partir de texto o PDF, ajustar dificultad, número de preguntas y formato, y corregir cada respuesta
+        con explicaciones claras. El objetivo no es solo memorizar, sino entender conceptos, detectar errores
+        frecuentes y mejorar la toma de decisiones en situaciones similares a un examen real.
+      </p>
+      <p>
+        La metodología combina recuperación activa, práctica espaciada y revisión razonada de fallos.
+        Al trabajar con preguntas generadas sobre tu propio material, puedes evaluar de forma concreta qué sabes,
+        qué te confunde y qué debes reforzar. Esto hace que el estudio sea más eficiente y reduce la falsa sensación
+        de dominio que aparece con la lectura pasiva. Además, la plataforma incluye exportación en PDF,
+        métricas de uso y recomendaciones para organizar mejor el repaso semanal.
+      </p>
+      <p>
+        En el blog publicamos guías prácticas sobre técnicas de estudio, gestión de ansiedad, planificación
+        de semanas de exámenes, y uso responsable de IA en educación. Todo el contenido está enfocado en aportar
+        utilidad directa para preparar pruebas académicas con más claridad. Si quieres empezar, visita la portada,
+        sube tus apuntes y genera tu primer simulacro en pocos minutos.
+      </p>
+      <img src="/og/examsphere-home-1200x630.jpg" alt="Vista general de ExamSphere, plataforma de exámenes con IA para estudiar" />
+      <section>
+        <h2>Autoría y confianza</h2>
+        <p>
+          Contenido editorial y producto por el equipo de ExamSphere. Puedes contactar para soporte o consultas en
+          <a href="/contacto/">la página de contacto</a>. Más contexto en <a href="/sobre-nosotros/">Sobre nosotros</a>.
+        </p>
+      </section>
+      <section>
+        <h2>Buscar en recursos</h2>
+        <form action="/blog/" method="get" role="search" aria-label="Búsqueda de recursos">
+          <label for="site-search">Buscar artículos del blog</label><br />
+          <input id="site-search" name="q" type="search" placeholder="Ejemplo: active recall, oposiciones, ansiedad" />
+          <button type="submit">Buscar</button>
+        </form>
+      </section>
+      <section>
+        <h2>Contenido destacado</h2>
+        <ul>
+          <li><a href="/blog/tecnicas-estudio/">Técnicas de estudio: active recall y repetición espaciada</a></li>
+          <li><a href="/blog/preparar-oposiciones-ia/">Cómo preparar oposiciones con IA</a></li>
+          <li><a href="/blog/errores-frecuentes-tipo-test/">Errores frecuentes al estudiar con tipo test</a></li>
+          <li><a href="/blog/organizar-semana-examenes/">Cómo organizar una semana de exámenes</a></li>
+        </ul>
+      </section>
+    </article>
+  </main>
+  <footer class="seo-fallback">
+    <p>Políticas y cumplimiento: <a href="/privacidad/">Privacidad</a> · <a href="/cookies/">Cookies</a> · <a href="/aviso-legal/">Aviso legal</a></p>
+    <p>Redes sociales: <a href="https://www.instagram.com/" rel="noopener noreferrer" target="_blank">Instagram</a> · <a href="https://www.tiktok.com/" rel="noopener noreferrer" target="_blank">TikTok</a></p>
+    <p>Cookie consent: la web muestra aviso de cookies para cumplimiento y control de preferencias.</p>
+  </footer>
   <amp-auto-ads type="adsense" data-ad-client="ca-pub-6748743800958265">
   </amp-auto-ads>
   <div id="root"></div>
