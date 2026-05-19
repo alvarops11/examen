@@ -79,6 +79,18 @@ export default function Estadisticas() {
         { label: "Sí", value: tutorYesVotes, icon: ThumbsUp, color: "text-emerald-600", bg: "bg-emerald-50" },
         { label: "No", value: tutorNoVotes, icon: ThumbsDown, color: "text-rose-600", bg: "bg-rose-50" },
     ];
+    const examTypeStats = {
+        multipleChoice: {
+            today: stats?.examTypes?.multiple_choice?.today || 0,
+            month: stats?.examTypes?.multiple_choice?.month || 0,
+            total: stats?.examTypes?.multiple_choice?.total || 0,
+        },
+        trueFalse: {
+            today: stats?.examTypes?.true_false?.today || 0,
+            month: stats?.examTypes?.true_false?.month || 0,
+            total: stats?.examTypes?.true_false?.total || 0,
+        },
+    };
 
     const mainStats = [
         { label: "Conversion Rate", value: `${conversionRate}%`, icon: Target, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Visitas que generan examen" },
@@ -266,6 +278,35 @@ export default function Estadisticas() {
                         </motion.div>
                     ))}
                 </div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mb-12"
+                >
+                    <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-indigo-600" />
+                        Conteo por tipo de examen
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="rounded-3xl bg-slate-50 p-6">
+                            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Tipo Test</div>
+                            <div className="mt-2 text-3xl font-black text-slate-900">{examTypeStats.multipleChoice.total.toLocaleString()}</div>
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                <div><span className="text-slate-500">Hoy:</span> <span className="font-bold text-slate-900">{examTypeStats.multipleChoice.today}</span></div>
+                                <div><span className="text-slate-500">Mes:</span> <span className="font-bold text-slate-900">{examTypeStats.multipleChoice.month}</span></div>
+                            </div>
+                        </div>
+                        <div className="rounded-3xl bg-slate-50 p-6">
+                            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Verdadero/Falso</div>
+                            <div className="mt-2 text-3xl font-black text-slate-900">{examTypeStats.trueFalse.total.toLocaleString()}</div>
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                <div><span className="text-slate-500">Hoy:</span> <span className="font-bold text-slate-900">{examTypeStats.trueFalse.today}</span></div>
+                                <div><span className="text-slate-500">Mes:</span> <span className="font-bold text-slate-900">{examTypeStats.trueFalse.month}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

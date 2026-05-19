@@ -910,6 +910,18 @@ export default {
           month: parseInt(await env.STATS_KV.get(`e:${thisMonth}`) || "0"),
           total: parseInt(await env.STATS_KV.get(`e:all`) || "0"),
         },
+        examTypes: {
+          multiple_choice: {
+            today: parseInt(await env.STATS_KV.get(`et:multiple_choice:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`et:multiple_choice:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`et:multiple_choice:all`) || "0"),
+          },
+          true_false: {
+            today: parseInt(await env.STATS_KV.get(`et:true_false:${today}`) || "0"),
+            month: parseInt(await env.STATS_KV.get(`et:true_false:${thisMonth}`) || "0"),
+            total: parseInt(await env.STATS_KV.get(`et:true_false:all`) || "0"),
+          },
+        },
         examSegments: {
           new: {
             today: parseInt(await env.STATS_KV.get(`es:new:${today}`) || "0"),
@@ -1605,6 +1617,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
             const duration = Date.now() - startTime;
             ctx.waitUntil((async () => {
               await incrementStatDaily(env.STATS_KV, 'e');
+              await incrementStatDaily(env.STATS_KV, `et:${examType}`);
               if (visitorType === "new" || visitorType === "returning") {
                 await incrementStatDaily(env.STATS_KV, `es:${visitorType}`);
               }

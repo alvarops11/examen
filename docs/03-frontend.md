@@ -149,3 +149,12 @@ Ajuste UX reciente (desktop):
 Comportamiento al corregir examen:
 - Al corregir (aprobado o suspenso), se aplica una animación corta de desplazamiento al inicio de la vista del examen.
 - Si se aprueba (>= 50%), además se muestra la celebración visual.
+
+Mejoras UX recientes en tutor:
+- CTA por pregunta renombrado a `¿Por qué fallé?` para mejorar comprensión funcional.
+- Microcopy de contexto junto al CTA (consultas disponibles y propósito inmediato).
+- Chat con sugerencias rápidas predefinidas para iniciar conversación sin fricción.
+- Nudge tras corregir cuando hay fallos: invita a abrir ayuda IA en preguntas incorrectas.
+- El nudge de fallos se muestra encima de la lista de preguntas para asegurar visibilidad.
+- El botón `¿Por qué fallé?` usa ancho fijo en escritorio para evitar desplazamientos horizontales.
+- El nudge de fallos usa copy orientado a acción y animación de pulso morado sutil para aumentar descubribilidad del tutor.

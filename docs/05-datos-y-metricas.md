@@ -42,6 +42,14 @@ Segmentacion examenes:
 - `es:new:all`
 - `es:returning:all`
 
+Conteo por tipo de examen:
+- `et:multiple_choice:<YYYY-MM-DD>`
+- `et:multiple_choice:<YYYY-MM>`
+- `et:multiple_choice:all`
+- `et:true_false:<YYYY-MM-DD>`
+- `et:true_false:<YYYY-MM>`
+- `et:true_false:all`
+
 ### 2.3 Dificultad y curso
 
 Dificultad:
@@ -137,6 +145,7 @@ Fuente:
 Bloques de visualizacion:
 - visitas
 - examenes
+- examenes por tipo (`Tipo Test` y `Verdadero/Falso`)
 - conversion/segmentacion new-returning
 - dificultades y cursos
 - eventos PDF
@@ -155,4 +164,3 @@ Bloques de visualizacion:
 
 3. Sin sistema de usuarios autenticados:
    - no hay cohortes de usuario persistente cross-device.
-

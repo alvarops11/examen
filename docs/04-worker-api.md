@@ -21,6 +21,7 @@ Secrets esperados:
 Devuelve agregados para panel de estadisticas:
 - visitas (hoy/mes/total)
 - examenes (hoy/mes/total)
+- examenes por tipo (`multiple_choice`, `true_false`) en hoy/mes/total
 - segmentacion new/returning
 - dificultades
 - cursos
@@ -180,4 +181,3 @@ Factores de consistencia:
 - calidad de parseo JSON del modelo
 - estricta validacion de `choices`/`answerIndex`
 - capacidad real de completar deficit en refuerzos
-

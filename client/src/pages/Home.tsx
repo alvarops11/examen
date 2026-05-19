@@ -59,6 +59,11 @@ const TIMER_PRESETS = [15, 30, 45, 60];
 const ERROR_TUTOR_MAX_CALLS = 3;
 const ERROR_TUTOR_USAGE_KEY = "error_tutor_usage_count";
 const ERROR_TUTOR_FEEDBACK_KEY = "error_tutor_feedback_sent";
+const ERROR_TUTOR_QUICK_PROMPTS = [
+  "¿Por qué la correcta es esta?",
+  "¿Cómo descarto las otras opciones?",
+  "Dame una regla para no fallar esto otra vez.",
+];
 const EXAM_FEEDBACK_OPTIONS = [
   { score: 1, emoji: "😞", label: "Muy mala" },
   { score: 2, emoji: "🙁", label: "Mejorable" },
@@ -455,7 +460,7 @@ export default function Home() {
         [questionIndex]: [
           {
             role: "assistant",
-            content: "Soy tu Tutor de errores. Puedes preguntarme por qué una opción es correcta, en qué te has podido confundir o cómo razonar mejor esta pregunta.",
+            content: "Soy tu explicación con IA. Te ayudo a entender por qué fallaste, cómo descartar distractores y qué regla aplicar para no repetir el error.",
           },
         ],
       };
@@ -1122,6 +1127,41 @@ export default function Home() {
 
 
 
+              {corregido && calificacion && (calificacion.total - calificacion.aciertos - calificacion.blancas) > 0 && (
+                <motion.div
+                  className="relative mb-6 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900 overflow-hidden"
+                  initial={{ opacity: 0, scale: 0.98, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                  <motion.div
+                    aria-hidden
+                    className="pointer-events-none absolute -left-1/3 top-0 h-full w-1/3"
+                    animate={{ x: ["-20%", "430%"], opacity: [0, 0.32, 0] }}
+                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 0.6 }}
+                    style={{
+                      background:
+                        "linear-gradient(100deg, rgba(99,102,241,0) 0%, rgba(99,102,241,0.22) 50%, rgba(99,102,241,0) 100%)",
+                    }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-2xl border border-indigo-300"
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="pointer-events-none absolute left-3 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-indigo-500"
+                    animate={{ scale: [1, 1.35, 1], opacity: [0.45, 0.9, 0.45] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <span className="relative z-[1] block pl-5">
+                    Has fallado {calificacion.total - calificacion.aciertos - calificacion.blancas} respuestas. Revísalas en segundos con IA: pulsa “¿Por qué fallé?” en cualquier pregunta.
+                  </span>
+                </motion.div>
+              )}
+
               {/* Questions List */}
               <div className="space-y-6">
                 {examen.questions.map((question, qIndex) => (
@@ -1206,23 +1246,23 @@ export default function Home() {
                                 <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg h-fit">
                                   <BrainCircuit className="w-4 h-4" />
                                 </div>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-1">Explicación</p>
                                   <p className="text-sm text-slate-700 leading-relaxed">
                                     {question.explanation}
                                   </p>
-                                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <p className="text-xs font-medium text-slate-500">
-                                      Modo prueba: {remainingTutorCalls} de {ERROR_TUTOR_MAX_CALLS} consultas disponibles
+                                  <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+                                    <p className="text-xs font-medium text-slate-500 sm:text-right">
+                                      Haz una pregunta sobre esta respuesta.
                                     </p>
                                     <Button
                                       type="button"
                                       variant="outline"
                                       onClick={() => openErrorTutor(qIndex)}
-                                      className="rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                      className="w-full rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50 sm:w-[180px]"
                                     >
                                       <MessageCircleQuestion className="mr-2 h-4 w-4" />
-                                      Tutor de errores
+                                      ¿Por qué fallé?
                                     </Button>
                                   </div>
                                 </div>
@@ -1249,10 +1289,10 @@ export default function Home() {
                   <DialogHeader className="border-b border-slate-100 px-5 py-4 sm:px-6">
                     <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <MessageCircleQuestion className="h-5 w-5 text-indigo-600" />
-                      Tutor de errores
+                      Explicación con IA
                     </DialogTitle>
                     <DialogDescription className="text-sm text-slate-500">
-                      Resuelve dudas concretas sobre esta pregunta. Esta funcionalidad está en modo prueba.
+                      Te explica esta pregunta de forma simple y aplicada. Esta funcionalidad está en modo prueba.
                     </DialogDescription>
                   </DialogHeader>
 
@@ -1299,6 +1339,19 @@ export default function Home() {
                     </div>
 
                     <div className="mt-4 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {ERROR_TUTOR_QUICK_PROMPTS.map((prompt) => (
+                          <button
+                            key={prompt}
+                            type="button"
+                            onClick={() => setErrorTutorDraft(prompt)}
+                            disabled={errorTutorLoading || remainingTutorCalls === 0}
+                            className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
                       <Textarea
                         value={errorTutorDraft}
                         onChange={(e) => setErrorTutorDraft(e.target.value)}
@@ -1313,7 +1366,7 @@ export default function Home() {
 
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs text-slate-500">
-                          Puedes preguntar por el razonamiento, la opción correcta o en qué te has podido confundir.
+                          Puedes preguntar por la lógica de la correcta, tus fallos y cómo evitar confusiones plausibles.
                         </p>
                         <Button
                           type="button"
