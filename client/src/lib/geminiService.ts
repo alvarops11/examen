@@ -6,6 +6,8 @@ export interface ExamQuestion {
   explanation: string;
 }
 
+export type ExamType = "multiple_choice" | "true_false";
+
 export interface ErrorTutorResponse {
   answer: string;
 }
@@ -215,6 +217,7 @@ export async function generateExamWithOpenRouter(
   numeroPreguntas: number,
   numeroRespuestas: number,
   temario: string,
+  examType: ExamType = "multiple_choice",
   onProgress?: (message: string) => void
 ): Promise<ExamResponse> {
   const workerUrl = getBaseUrl() + "/api/generate";
@@ -230,6 +233,7 @@ export async function generateExamWithOpenRouter(
         numeroPreguntas,
         numeroRespuestas,
         temario,
+        examType,
         visitorType: visitorProfile.visitorType,
         visitorId: visitorProfile.visitorId,
       }),

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Upload, Sparkles, BookOpen, GraduationCap, BrainCircuit, CheckCircle2, XCircle, ArrowRight, Download, Zap, Target, TimerReset, Play, Pause, Hourglass, Clock3, ChevronLeft, ChevronRight, MessageCircleQuestion, Send, ThumbsUp, ThumbsDown, Bot, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
-import { generateExamWithOpenRouter, trackVisit, trackEvent, askErrorTutor } from "@/lib/geminiService";
+import { generateExamWithOpenRouter, trackVisit, trackEvent, askErrorTutor, type ExamType } from "@/lib/geminiService";
 import { generateExamPDF } from "@/lib/pdfService";
 import { motion, AnimatePresence } from "framer-motion";
 import CookieBanner from "@/components/CookieBanner";
@@ -16,6 +16,7 @@ import SEO from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /**
  * Diseño: Neo-Academic Premium
@@ -89,6 +90,7 @@ export default function Home() {
   // Estado del formulario
   const [curso, setCurso] = useState("1º");
   const [dificultad, setDificultad] = useState("media");
+  const [examType, setExamType] = useState<ExamType>("multiple_choice");
   const [numeroPreguntas, setNumeroPreguntas] = useState(20);
   const [numeroRespuestas, setNumeroRespuestas] = useState(4);
   const [temario, setTemario] = useState("");
@@ -174,6 +176,21 @@ export default function Home() {
       return;
     }
     applyTimerDuration(parsed);
+  };
+
+  const quickScrollToTop = (durationMs = 420) => {
+    const startY = window.scrollY;
+    if (startY <= 0) return;
+    const startTime = performance.now();
+
+    const frame = (now: number) => {
+      const progress = Math.min((now - startTime) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      window.scrollTo(0, Math.round(startY * (1 - eased)));
+      if (progress < 1) requestAnimationFrame(frame);
+    };
+
+    requestAnimationFrame(frame);
   };
 
   useEffect(() => {
@@ -303,8 +320,9 @@ export default function Home() {
         curso, 
         dificultad, 
         numeroPreguntas, 
-        numeroRespuestas, 
+        examType === "true_false" ? 2 : numeroRespuestas,
         temario,
+        examType,
         (msg) => setProgressMessage(msg)
       );
       setExamen(data);
@@ -359,7 +377,7 @@ export default function Home() {
     setCalificacion({ aciertos, blancas, total: examen.questions.length, porcentaje });
     setCorregido(true);
     setShowFeedbackSurvey(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    quickScrollToTop();
 
     if (porcentaje >= 50) {
       // Confetti celebration — dos ráfagas laterales
@@ -659,7 +677,7 @@ export default function Home() {
                 <div className="relative z-10 grid gap-8">
                   {/* Settings Grid */}
                   {/* Settings Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700 ml-1">Nivel Académico</label>
                       <div className="relative">
@@ -703,12 +721,34 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700 ml-1">Tipo Examen</label>
+                      <div className="relative">
+                        <Select value={examType} onValueChange={(value) => setExamType(value as ExamType)}>
+                          <SelectTrigger className="!h-[48px] w-full cursor-pointer !py-0 pl-4 pr-12 glass-input rounded-xl text-[15px] md:text-sm text-slate-700 font-medium [&>svg]:hidden">
+                            <SelectValue>
+                              {examType === "true_false" ? "V/F" : "Tipo Test"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="multiple_choice">Tipo Test</SelectItem>
+                            <SelectItem value="true_false">Verdadero o Falso</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Target className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      </div>
+                      {examType === "true_false" && (
+                        <p className="text-xs text-slate-500 ml-1">Modo Verdadero/Falso.</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700 ml-1">Respuestas</label>
                       <div className="relative">
                         <select
-                          value={numeroRespuestas}
+                          value={examType === "true_false" ? 2 : numeroRespuestas}
                           onChange={(e) => setNumeroRespuestas(parseInt(e.target.value))}
-                          className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer"
+                          disabled={examType === "true_false"}
+                          className="w-full pl-4 pr-10 py-3 glass-input rounded-xl text-slate-700 appearance-none font-medium cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                           <option value="2">2 opciones</option>
                           <option value="3">3 opciones</option>
@@ -718,6 +758,9 @@ export default function Home() {
                         </select>
                         <ArrowRight className="absolute right-3 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
                       </div>
+                      {examType === "true_false" && (
+                        <p className="text-xs text-slate-500 ml-1">En Verdadero/Falso siempre se usan 2 opciones.</p>
+                      )}
                     </div>
                   </div>
 

@@ -26,10 +26,13 @@ interface GenerateRequest {
   dificultad: string;
   numeroPreguntas: number;
   numeroRespuestas: number;
+  examType?: "multiple_choice" | "true_false";
   temario: string;
   visitorType?: "new" | "returning";
   visitorId?: string;
 }
+
+type ExamType = "multiple_choice" | "true_false";
 
 const EXAM_MODELS = [
   "openai/gpt-oss-20b",
@@ -182,25 +185,49 @@ function distributeQuestionCounts(totalQuestions: number, totalChunks: number): 
   ));
 }
 
-function sanitizeQuestion(rawQuestion: any, expectedChoices: number): ExamQuestion | null {
+function normalizeExamType(rawExamType: unknown): ExamType {
+  return rawExamType === "true_false" ? "true_false" : "multiple_choice";
+}
+
+function normalizeTrueFalseChoice(choice: string): string {
+  const normalized = normalizeText(choice).replace(/[.]/g, "").trim();
+  if (normalized === "verdadero" || normalized === "true" || normalized === "v") return "Verdadero";
+  if (normalized === "falso" || normalized === "false" || normalized === "f") return "Falso";
+  return choice.trim();
+}
+
+function sanitizeQuestion(rawQuestion: any, expectedChoices: number, examType: ExamType): ExamQuestion | null {
   const question = typeof rawQuestion?.question === "string" ? rawQuestion.question.trim() : "";
   const explanation = typeof rawQuestion?.explanation === "string" ? rawQuestion.explanation.trim() : "";
   const rawChoices = Array.isArray(rawQuestion?.choices) ? rawQuestion.choices : [];
-  const choices = rawChoices
+  const rawSanitizedChoices = rawChoices
     .filter((choice: unknown) => typeof choice === "string")
     .map((choice: string) => choice.trim())
     .filter(Boolean);
+  const choices = examType === "true_false"
+    ? rawSanitizedChoices.map(normalizeTrueFalseChoice)
+    : rawSanitizedChoices;
   const answerIndex = Number.isInteger(rawQuestion?.answerIndex) ? rawQuestion.answerIndex : -1;
 
   if (!question || !explanation) return null;
   if (choices.length !== expectedChoices) return null;
   if (answerIndex < 0 || answerIndex >= choices.length) return null;
   if (new Set(choices.map((choice) => choice.trim().toLowerCase())).size !== choices.length) return null;
+  if (examType === "true_false") {
+    const validPair = new Set(["verdadero", "falso"]);
+    const normalizedChoices = choices.map((choice) => normalizeText(choice));
+    if (normalizedChoices.length !== 2 || !normalizedChoices.every((c) => validPair.has(c))) return null;
+  }
 
   const correctChoice = choices[answerIndex];
-  for (let i = choices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [choices[i], choices[j]] = [choices[j], choices[i]];
+  if (examType === "true_false") {
+    // UX consistente: en V/F siempre mostramos "Verdadero" y luego "Falso".
+    choices.splice(0, choices.length, "Verdadero", "Falso");
+  } else {
+    for (let i = choices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
   }
 
   return {
@@ -293,9 +320,9 @@ function preprocessTemario(raw: string): { text: string; removedLines: number; o
   };
 }
 
-function sanitizeQuestions(rawQuestions: any[], expectedChoices: number): ExamQuestion[] {
+function sanitizeQuestions(rawQuestions: any[], expectedChoices: number, examType: ExamType): ExamQuestion[] {
   return rawQuestions
-    .map((question) => sanitizeQuestion(question, expectedChoices))
+    .map((question) => sanitizeQuestion(question, expectedChoices, examType))
     .filter((question): question is ExamQuestion => question !== null);
 }
 
@@ -363,6 +390,26 @@ function referencesExternalVisualContext(text: string): boolean {
     "anterior"
   ];
   return bannedPatterns.some((pattern) => normalized.includes(pattern));
+}
+
+function referencesDocumentStructure(text: string): boolean {
+  const normalized = normalizeText(text);
+  const structuralTerms = [
+    "capitulo",
+    "seccion",
+    "subseccion",
+    "apartado",
+    "subapartado",
+    "indice",
+    "epigrafe",
+    "tema",
+    "unidad",
+    "bloque",
+    "pagina"
+  ];
+  const hasStructuralTerm = structuralTerms.some((term) => normalized.includes(term));
+  const hasSectionNumbering = /\b\d+(?:\.\d+){1,4}\b/.test(normalized);
+  return hasStructuralTerm || hasSectionNumbering;
 }
 
 function questionQualityGate(question: ExamQuestion): boolean {
@@ -464,18 +511,24 @@ function isTautologicalPattern(question: string): boolean {
   return patterns.some((p) => p.test(q));
 }
 
-function getHardRejectionReason(question: ExamQuestion, expectedChoices: number): string | null {
+function getHardRejectionReason(question: ExamQuestion, expectedChoices: number, examType: ExamType): string | null {
   if (!question.question || !question.explanation) return "empty_fields";
   if (!Array.isArray(question.choices) || question.choices.length !== expectedChoices) return "invalid_choice_count";
   if (question.answerIndex < 0 || question.answerIndex >= question.choices.length) return "invalid_answer_index";
   if (referencesExternalVisualContext(question.question)) return "external_context_dependency";
+  if (referencesDocumentStructure(question.question)) return "document_structure_dependency";
   if (new Set(question.choices.map((choice) => normalizeText(choice))).size !== question.choices.length) return "duplicate_choices";
   if (question.choices.some((choice) => containsOptionPrefix(choice))) return "dirty_choice_prefix";
+  if (examType === "true_false") {
+    const normalized = question.choices.map((choice) => normalizeText(choice));
+    const tfSet = new Set(["verdadero", "falso"]);
+    if (normalized.length !== 2 || !normalized.every((c) => tfSet.has(c))) return "invalid_true_false_choices";
+  }
   if (hasNoPathIntent(question.question) && !hasInfinityChoice(question.choices)) return "no_path_without_infinity_choice";
   return null;
 }
 
-function computeQuestionScore(question: ExamQuestion): number {
+function computeQuestionScore(question: ExamQuestion, examType: ExamType): number {
   const normalizedQuestion = normalizeText(question.question);
   const choiceLengths = question.choices.map((c) => normalizeText(c).length).filter((len) => len > 0);
   const maxLen = choiceLengths.length > 0 ? Math.max(...choiceLengths) : 0;
@@ -489,12 +542,66 @@ function computeQuestionScore(question: ExamQuestion): number {
   if (normalizedQuestion.length >= 55) score += 1;
   if (referencesExternalVisualContext(question.question)) score -= 3;
   if (question.question.length < 45) score -= 2;
-  if (question.choices.some((choice) => /^(si|no|verdadero|falso)$/i.test(choice.trim()))) score -= 2;
+  if (examType !== "true_false" && question.choices.some((choice) => /^(si|no|verdadero|falso)$/i.test(choice.trim()))) score -= 2;
   const leakage = computeAnswerLeakage(question.question, question.choices);
   if (leakage >= 2) score -= 5;
   else if (leakage === 1) score -= 3;
   if (isTautologicalPattern(question.question)) score -= 4;
   return score;
+}
+
+interface RankedQuestion {
+  q: ExamQuestion;
+  score: number;
+}
+
+function selectWithSemanticDiversity(
+  ranked: RankedQuestion[],
+  target: number,
+  discardMetrics: Record<string, number>,
+  maxPerFamily = 2,
+  familySimilarityThreshold = 0.58
+): ExamQuestion[] {
+  const selected: ExamQuestion[] = [];
+  const familyRepresentatives: Array<{ question: string; count: number }> = [];
+
+  for (const item of ranked) {
+    if (selected.length >= target) break;
+
+    let matchedFamily = -1;
+    for (let i = 0; i < familyRepresentatives.length; i++) {
+      if (jaccardSimilarity(item.q.question, familyRepresentatives[i].question) >= familySimilarityThreshold) {
+        matchedFamily = i;
+        break;
+      }
+    }
+
+    if (matchedFamily === -1) {
+      familyRepresentatives.push({ question: item.q.question, count: 1 });
+      selected.push(item.q);
+      continue;
+    }
+
+    if (familyRepresentatives[matchedFamily].count >= maxPerFamily) {
+      discardMetrics["semantic_family_cap"] = (discardMetrics["semantic_family_cap"] || 0) + 1;
+      continue;
+    }
+
+    familyRepresentatives[matchedFamily].count += 1;
+    selected.push(item.q);
+  }
+
+  // Relleno de seguridad por si el cap de familias deja huecos.
+  if (selected.length < target) {
+    for (const item of ranked) {
+      if (selected.length >= target) break;
+      if (!selected.some((s) => normalizeText(s.question) === normalizeText(item.q.question))) {
+        selected.push(item.q);
+      }
+    }
+  }
+
+  return selected.slice(0, target);
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -629,10 +736,6 @@ async function fetchWithFailover(
     "No se pudo generar el examen, espera un momento y vuelve a intentarlo, si no funciona contacta con soporte.",
     true
   );
-}
-
-function modelKey(model: string): string {
-  return encodeURIComponent(model);
 }
 
 export function normalizeTutorAnswer(text: string): string {
@@ -783,24 +886,6 @@ export default {
       const today = now.toISOString().split('T')[0];
       const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-      const modelStats = await Promise.all(EXAM_MODELS.map(async (model) => {
-        const key = modelKey(model);
-        const attempts = parseInt(await env.STATS_KV.get(`model:${key}:attempts`) || "0");
-        const success = parseInt(await env.STATS_KV.get(`model:${key}:success`) || "0");
-        const latencySum = parseInt(await env.STATS_KV.get(`model:${key}:latency_sum`) || "0");
-        const timeouts = parseInt(await env.STATS_KV.get(`model:${key}:timeouts`) || "0");
-        const fallbackUses = parseInt(await env.STATS_KV.get(`model:${key}:fallback_uses`) || "0");
-        const parseFailures = parseInt(await env.STATS_KV.get(`model:${key}:parse_failures`) || "0");
-        return {
-          model,
-          successRate: attempts > 0 ? Number(((success / attempts) * 100).toFixed(1)) : 0,
-          avgLatency: attempts > 0 ? Number((latencySum / attempts).toFixed(0)) : 0,
-          timeoutRate: attempts > 0 ? Number(((timeouts / attempts) * 100).toFixed(1)) : 0,
-          fallbackRate: attempts > 0 ? Number(((fallbackUses / attempts) * 100).toFixed(1)) : 0,
-          parseFailureRate: attempts > 0 ? Number(((parseFailures / attempts) * 100).toFixed(1)) : 0,
-        };
-      }));
-
       const stats = {
         visitors: {
           today: parseInt(await env.STATS_KV.get(`v:${today}`) || "0"),
@@ -880,7 +965,7 @@ export default {
             no: parseInt(await env.STATS_KV.get(`event:error_tutor_trial_feedback_no`) || "0"),
           },
         },
-        modelPerformance: modelStats
+        modelPerformance: []
       };
 
       return new Response(JSON.stringify(stats), {
@@ -1012,6 +1097,8 @@ export default {
 
           const body = await request.json() as GenerateRequest;
           const { curso, dificultad, numeroPreguntas, numeroRespuestas, temario, visitorType } = body;
+          const examType = normalizeExamType(body.examType);
+          const expectedChoices = examType === "true_false" ? 2 : (numeroRespuestas || 4);
           const normalizedTemario = preprocessTemario(temario || "");
 
           if (!temario || !temario.trim()) {
@@ -1082,7 +1169,126 @@ export default {
 
             sendSSE({ type: "log", message: `Extrayendo preguntas de la ${sectionLabel}...` });
 
-            const systemPrompt = `Eres un profesor experto en evaluación. Tu objetivo es generar preguntas de opción múltiple de calidad, estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso, claro y preciso.
+            const systemPrompt = examType === "true_false"
+              ? `Eres un profesor experto en evaluación. Tu objetivo es generar preguntas de VERDADERO/FALSO de calidad, estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso, claro y preciso.
+
+<reglas_inquebrantables>
+1. Todo el contenido debe estar exclusivamente en ESPAÑOL.
+
+2. Usa ÚNICAMENTE información presente en <fragmento_temario>. No inventes datos, cifras, nombres, fechas, ejemplos concretos, resultados, casos ni conocimientos externos.
+
+3. Puedes crear mini-casos SOLO si son conceptuales, coherentes con el temario y no introducen datos concretos nuevos no presentes en el fragmento.
+
+4. Cada pregunta debe ser AUTOSUFICIENTE: el alumno debe poder responderla usando únicamente el enunciado visible y sus opciones.
+
+5. Si una pregunta requiere calcular, identificar, comparar o recordar un dato concreto, el enunciado debe incluir todos los datos necesarios para resolverla.
+
+6. Está prohibido referenciar contenido externo al enunciado con expresiones como:
+"según el texto", "según el fragmento", "según el documento", "según la tabla", "según la imagen", "según el gráfico", "según el ejemplo", "en el ejemplo", "en el caso anterior", "como se muestra", "como aparece", "en la figura", "en el enunciado", "en el apartado", "en el párrafo".
+
+7. Prohibido crear preguntas cuya respuesta aparezca literalmente en el propio enunciado de forma trivial.
+
+8. Prioriza preguntas sobre relaciones, características, funciones, diferencias, causas, consecuencias, implicaciones, aplicaciones o razonamiento. Usa definiciones directas solo cuando el contenido no permita otro enfoque.
+
+9. Cada pregunta debe tener EXACTAMENTE 2 opciones y deben ser estrictamente: "Verdadero" y "Falso".
+
+10. Solo debe existir una respuesta correcta clara.
+
+11. Las opciones deben responder exactamente a lo que pregunta el enunciado.
+
+12. No incluyas prefijos como "A)", "B)", números o viñetas dentro de las opciones.
+
+13. La salida debe ser JSON válido parseable con JSON.parse(). No añadas markdown, comentarios ni texto fuera del JSON.
+
+14. Si el fragmento no permite generar el número solicitado de preguntas sin inventar contenido o bajar la calidad, genera menos preguntas.
+
+15. Varía la posición de la respuesta correcta cuando sea posible.
+
+16. No generes preguntas sobre la ubicación del contenido en el material, aunque el fragmento incluya índice, títulos o numeración. Ignora la estructura documental y evalúa solo el contenido conceptual.
+
+17. Evita preguntas cuya respuesta sea una repetición casi literal de una frase del enunciado. Si el enunciado ya contiene el dato clave, reformula la pregunta para evaluar comprensión.
+
+18. Nivel de exigencia alto: prioriza enunciados con matices, condiciones, excepciones y aplicación práctica del concepto, siempre sin introducir datos externos al fragmento.
+
+19. Cada pregunta debe evaluar un concepto DIFERENTE. Está prohibido generar:
+- reformulaciones mínimas del mismo concepto;
+- preguntas que evalúen la misma relación causal;
+- preguntas que solo cambien el sujeto o una palabra;
+- secuencias de preguntas sobre la misma idea central.
+Si dos preguntas podrían responderse usando exactamente el mismo razonamiento, elimina una.
+
+20. Evita afirmaciones simples de definición. Cada pregunta debe incluir al menos uno de estos elementos:
+- una condición;
+- una comparación;
+- una implicación;
+- una excepción;
+- una relación causal;
+- un moderador;
+- una aplicación práctica.
+
+21. Reformula activamente el contenido. No reutilices estructuras ni frases reconocibles del temario salvo términos técnicos imprescindibles.
+</reglas_inquebrantables>
+
+<formato_json>
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Pregunta",
+      "choices": [
+        "Verdadero",
+        "Falso"
+      ],
+      "answerIndex": 0,
+      "explanation": "Explicación breve y directa."
+    }
+  ]
+}
+</formato_json>
+
+<calidad_de_preguntas>
+Evita preguntas:
+- demasiado obvias o triviales;
+- tautológicas;
+- cuya respuesta esté contenida literalmente en la pregunta;
+- que dependan de una imagen, tabla, gráfico, ejemplo o contexto externo no incluido;
+- donde varias opciones puedan considerarse correctas;
+- donde ninguna opción responda exactamente a lo preguntado;
+- que repitan el mismo concepto con distinta redacción;
+- sobre la estructura del documento, índice, capítulos, secciones, subsecciones, apartados o numeración interna del contenido;
+- que copien frases largas del temario sin reformularlas.
+Evalúa conceptos, relaciones, implicaciones y comprensión del contenido, no la localización del contenido dentro del documento.
+</calidad_de_preguntas>
+
+<directrices_de_calidad>
+- Genera preguntas naturales, claras y específicas según el contenido disponible.
+- Evita reutilizar estructuras idénticas entre preguntas.
+- Varía la estructura sintáctica de las preguntas.
+- No copies frases completas del temario salvo que sea imprescindible.
+- Mantén explicaciones breves, concretas y justificadas.
+- Si usas datos concretos, incluye dentro del enunciado todos los datos necesarios para responder sin mirar nada externo.
+- Sube la dificultad con matices plausibles: incluye condiciones límite, casos parcialmente correctos y excepciones reales del contenido.
+- Diseña distractores cercanos a la respuesta correcta (confusiones plausibles), evitando pistas obvias.
+- Cuando el fragmento lo permita, prioriza mini-casos prácticos y preguntas de aplicación frente a memoria literal.
+- Las preguntas deben parecer propias de un examen universitario exigente.
+- Prioriza comprensión profunda, relaciones entre variables, inferencias plausibles, aplicación conceptual y detección de afirmaciones parcialmente incorrectas.
+</directrices_de_calidad>
+
+<autocontrol_final>
+Antes de devolver el JSON:
+- revisa cada pregunta;
+- elimina preguntas triviales;
+- elimina preguntas redundantes;
+- elimina preguntas cuya respuesta pueda deducirse por pistas lingüísticas;
+- elimina preguntas sobre estructura documental;
+- elimina preguntas demasiado literales;
+- elimina preguntas ambiguas.
+</autocontrol_final>
+
+Genera HASTA ${questionsForThisChunk} preguntas válidas con 2 opciones cada una.
+Prioriza calidad, autosuficiencia y claridad sobre cantidad.
+Devuelve ÚNICAMENTE el objeto JSON.`
+              : `Eres un profesor experto en evaluación. Tu objetivo es generar preguntas de opción múltiple de calidad, estrictamente basadas en el temario proporcionado. Actúas como un evaluador riguroso, claro y preciso.
 
 <reglas_inquebrantables>
 1. Todo el contenido debe estar exclusivamente en ESPAÑOL.
@@ -1119,6 +1325,30 @@ export default {
 16. Si el fragmento no permite generar el número solicitado de preguntas sin inventar contenido o bajar la calidad, genera menos preguntas.
 
 17. Varía la posición de la respuesta correcta cuando sea posible.
+
+18. No generes preguntas sobre la ubicación del contenido en el material, aunque el fragmento incluya índice, títulos o numeración. Ignora la estructura documental y evalúa solo el contenido conceptual.
+
+19. Evita preguntas cuya respuesta sea una repetición casi literal de una frase del enunciado. Si el enunciado ya contiene el dato clave, reformula la pregunta para evaluar comprensión.
+
+20. Nivel de exigencia alto: prioriza enunciados con matices, condiciones, excepciones y aplicación práctica del concepto, siempre sin introducir datos externos al fragmento.
+
+21. Cada pregunta debe evaluar un concepto DIFERENTE. Está prohibido generar:
+- reformulaciones mínimas del mismo concepto;
+- preguntas que evalúen la misma relación causal;
+- preguntas que solo cambien el sujeto o una palabra;
+- secuencias de preguntas sobre la misma idea central.
+Si dos preguntas podrían responderse usando exactamente el mismo razonamiento, elimina una.
+
+22. Evita afirmaciones simples de definición. Cada pregunta debe incluir al menos uno de estos elementos:
+- una condición;
+- una comparación;
+- una implicación;
+- una excepción;
+- una relación causal;
+- un moderador;
+- una aplicación práctica.
+
+23. Reformula activamente el contenido. No reutilices estructuras ni frases reconocibles del temario salvo términos técnicos imprescindibles.
 </reglas_inquebrantables>
 
 <formato_json>
@@ -1162,9 +1392,25 @@ Evalúa conceptos, relaciones, implicaciones y comprensión del contenido, no la
 - No copies frases completas del temario salvo que sea imprescindible.
 - Mantén explicaciones breves, concretas y justificadas.
 - Si usas datos concretos, incluye dentro del enunciado todos los datos necesarios para responder sin mirar nada externo.
+- Sube la dificultad con matices plausibles: incluye condiciones límite, casos parcialmente correctos y excepciones reales del contenido.
+- Diseña distractores cercanos a la respuesta correcta (confusiones plausibles), evitando pistas obvias.
+- Cuando el fragmento lo permita, prioriza mini-casos prácticos y preguntas de aplicación frente a memoria literal.
+- Las preguntas deben parecer propias de un examen universitario exigente.
+- Prioriza comprensión profunda, relaciones entre variables, inferencias plausibles, aplicación conceptual y detección de afirmaciones parcialmente incorrectas.
 </directrices_de_calidad>
 
-Genera HASTA ${questionsForThisChunk} preguntas válidas con ${numeroRespuestas || 4} opciones cada una.
+<autocontrol_final>
+Antes de devolver el JSON:
+- revisa cada pregunta;
+- elimina preguntas triviales;
+- elimina preguntas redundantes;
+- elimina preguntas cuya respuesta pueda deducirse por pistas lingüísticas;
+- elimina preguntas sobre estructura documental;
+- elimina preguntas demasiado literales;
+- elimina preguntas ambiguas.
+</autocontrol_final>
+
+Genera HASTA ${questionsForThisChunk} preguntas válidas con ${expectedChoices} opciones cada una.
 Prioriza calidad, autosuficiencia y claridad sobre cantidad.
 Devuelve ÚNICAMENTE el objeto JSON.`;
 
@@ -1190,12 +1436,6 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                 if (attempts > 0) await wait(1000 * attempts + Math.random() * 1000);
 
                 const currentModel = models[attempts];
-                const currentModelKey = modelKey(currentModel);
-                const modelAttemptStart = Date.now();
-                await incrementStat(env.STATS_KV, `model:${currentModelKey}:attempts`);
-                if (attempts > 0) {
-                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:fallback_uses`);
-                }
                 sendSSE({ type: "log", message: `Refinando la ${sectionLabel} para mayor calidad...` });
 
                 const response = await fetchWithFailover("https://openrouter.ai/api/v1/chat/completions", {
@@ -1238,27 +1478,16 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
                 }
 
                 if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
-                  chunkQuestions = sanitizeQuestions(parsed.questions, numeroRespuestas || 4);
+                  chunkQuestions = sanitizeQuestions(parsed.questions, expectedChoices, examType);
                   if (chunkQuestions.length === 0) {
-                    await incrementStat(env.STATS_KV, `model:${currentModelKey}:parse_failures`);
                     throw new Error("Invalid generated questions");
                   }
-                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:success`);
-                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:latency_sum`, Date.now() - modelAttemptStart);
                   success = true;
                   sendSSE({ type: "log", message: `${sectionLabel.charAt(0).toUpperCase() + sectionLabel.slice(1)} lista.` });
                 } else {
-                  await incrementStat(env.STATS_KV, `model:${currentModelKey}:parse_failures`);
                   throw new Error("Invalid JSON structure");
                 }
               } catch (e: any) {
-                const currentModel = models[attempts];
-                if (currentModel) {
-                  const currentModelKey = modelKey(currentModel);
-                  if ((e?.message || "").toLowerCase().includes("timeout")) {
-                    await incrementStat(env.STATS_KV, `model:${currentModelKey}:timeouts`);
-                  }
-                }
                 chunkLastError = e.message;
                 attempts++;
               }
@@ -1280,17 +1509,17 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           console.log(`[Worker] Procesando ${chunks.length} fragmentos con concurrencia ${chunkConcurrency}...`);
           const results = await runChunkTasksWithConcurrency(chunkTasks, chunkConcurrency);
           allQuestions = results.flat();
-          const rankQuestions = (questions: ExamQuestion[]) => {
+          const rankQuestions = (questions: ExamQuestion[]): RankedQuestion[] => {
             const deduped = dedupeQuestions(questions);
-            const accepted: Array<{ q: ExamQuestion; score: number }> = [];
+            const accepted: RankedQuestion[] = [];
 
             for (const q of deduped) {
-              const hardReason = getHardRejectionReason(q, numeroRespuestas || 4);
+              const hardReason = getHardRejectionReason(q, expectedChoices, examType);
               if (hardReason) {
                 discardMetrics[hardReason] = (discardMetrics[hardReason] || 0) + 1;
                 continue;
               }
-              accepted.push({ q, score: computeQuestionScore(q) });
+              accepted.push({ q, score: computeQuestionScore(q, examType) });
             }
 
             accepted.sort((a, b) => b.score - a.score);
@@ -1298,7 +1527,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
           };
 
           let ranked = rankQuestions(allQuestions);
-          let selected = ranked.slice(0, targetQuestions).map((entry) => entry.q);
+          let selected = selectWithSemanticDiversity(ranked, targetQuestions, discardMetrics);
 
           const maxRepairRounds = useCompactMode ? 2 : 1;
           let repairRound = 0;
@@ -1325,7 +1554,7 @@ RECORDATORIO: Devuelve SOLO el código JSON estructurado.`;
               allQuestions = allQuestions.concat(refillChunkQuestions);
             }
             ranked = rankQuestions(allQuestions);
-            selected = ranked.slice(0, targetQuestions).map((entry) => entry.q);
+            selected = selectWithSemanticDiversity(ranked, targetQuestions, discardMetrics);
             repairRound++;
           }
 
